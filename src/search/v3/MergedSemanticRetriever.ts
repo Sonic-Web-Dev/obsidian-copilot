@@ -19,6 +19,9 @@ type RetrieverOptions = {
 };
 
 type SourceKind = "lexical" | "semantic";
+type SemanticRetriever = {
+  getRelevantDocuments: (query: string, config?: BaseCallbackConfig) => Promise<Document[]>;
+};
 
 /**
  * Merges semantic (vector-based) and lexical (Search v3) retrieval results into a single ranked list.
@@ -29,7 +32,7 @@ export class MergedSemanticRetriever extends BaseRetriever {
   public lc_namespace = ["merged_semantic_retriever"];
 
   private lexicalRetriever: TieredLexicalRetriever;
-  private semanticRetriever: BaseRetriever;
+  private semanticRetriever: SemanticRetriever;
   private readonly originalMaxK: number;
   private readonly returnAll: boolean;
 
@@ -47,7 +50,7 @@ export class MergedSemanticRetriever extends BaseRetriever {
   constructor(
     private app: App,
     private options: RetrieverOptions,
-    semanticRetriever?: BaseRetriever
+    semanticRetriever?: SemanticRetriever
   ) {
     super();
     this.originalMaxK = Math.max(1, options.maxK);
