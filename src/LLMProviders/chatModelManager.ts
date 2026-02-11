@@ -62,6 +62,8 @@ const CHAT_PROVIDER_CONSTRUCTORS = {
   [ChatModelProviders.DEEPSEEK]: ChatDeepSeek,
   [ChatModelProviders.AMAZON_BEDROCK]: BedrockChatModel,
   [ChatModelProviders.GITHUB_COPILOT]: GitHubCopilotChatModel,
+  // ContextHub: OpenAI-compatible endpoint (OCXP gateway -> AgentCore)
+  [ChatModelProviders.CONTEXTHUB]: ChatOpenAI,
 } as const;
 
 type ChatProviderConstructMap = typeof CHAT_PROVIDER_CONSTRUCTORS;
@@ -99,6 +101,8 @@ export default class ChatModelManager {
     [ChatModelProviders.SILICONFLOW]: () => getSettings().siliconflowApiKey,
     [ChatModelProviders.GITHUB_COPILOT]: () =>
       getSettings().githubCopilotToken || getSettings().githubCopilotAccessToken,
+    // ContextHub: token auto-populated from companion plugin, falls back to manual key
+    [ChatModelProviders.CONTEXTHUB]: () => getSettings().contextHubApiKey || "contexthub-auto",
   } as const;
 
   private constructor() {
@@ -372,6 +376,21 @@ export default class ChatModelManager {
         // because Obsidian's requestUrl doesn't support cancellation.
         fetchImplementation: customModel.enableCors ? safeFetchNoThrow : undefined,
       },
+      // ContextHub: OpenAI-compatible endpoint (OCXP gateway -> AgentCore)
+      // Token is auto-populated from contexthub-obsidian companion plugin
+      [ChatModelProviders.CONTEXTHUB]: {
+        modelName: modelName,
+        apiKey: await getDecryptedKey(
+          customModel.apiKey || settings.contextHubApiKey || "contexthub-auto"
+        ),
+        configuration: {
+          baseURL: customModel.baseUrl || this.getContextHubBaseUrl(),
+          fetch: customModel.enableCors ? safeFetch : undefined,
+          defaultHeaders: {
+            ...this.getContextHubHeaders(),
+          },
+        },
+      },
     };
 
     let selectedProviderConfig =
@@ -565,6 +584,47 @@ export default class ChatModelManager {
     return params;
   }
 
+  /**
+   * Get ContextHub OCXP base URL from companion plugin or fallback to default.
+   * Reads from contexthub-obsidian plugin API if available.
+   */
+  private getContextHubBaseUrl(): string {
+    try {
+      const app = (globalThis as any).app;
+      const ch = app?.plugins?.plugins?.["contexthub"]?.api;
+      if (ch?.getOcxpEndpoint) {
+        const endpoint = ch.getOcxpEndpoint();
+        if (endpoint) return `${endpoint}/ocxp/chat/completions`;
+      }
+    } catch {
+      // Companion plugin not available
+    }
+    return "http://localhost:8000/ocxp/chat/completions";
+  }
+
+  /**
+   * Get ContextHub context headers from companion plugin.
+   * Injects workspace, project, and mission context for OCXP routing.
+   */
+  private getContextHubHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    try {
+      const app = (globalThis as any).app;
+      const ch = app?.plugins?.plugins?.["contexthub"]?.api;
+      if (ch) {
+        const workspaceId = ch.getWorkspaceId?.();
+        const missionId = ch.getActiveMissionId?.();
+        const projectId = ch.getActiveProjectId?.();
+        if (workspaceId) headers["X-Workspace"] = workspaceId;
+        if (missionId) headers["X-Mission"] = missionId;
+        if (projectId) headers["X-Project"] = projectId;
+      }
+    } catch {
+      // Companion plugin not available
+    }
+    return headers;
+  }
+
   // Build a map of modelKey to model config
   public buildModelMap() {
     const activeModels = getSettings().activeModels;
@@ -603,6 +663,18 @@ export default class ChatModelManager {
       const apiKey = model.apiKey || settings.amazonBedrockApiKey;
       // Region defaults to us-east-1 if not specified, so API key is the only requirement
       return Boolean(apiKey);
+    }
+
+    // ContextHub: check companion plugin for auth, or accept manual key
+    if (model.provider === ChatModelProviders.CONTEXTHUB) {
+      try {
+        const app = (globalThis as any).app;
+        const ch = app?.plugins?.plugins?.["contexthub"]?.api;
+        if (ch?.isAuthenticated?.()) return true;
+      } catch {
+        // Companion plugin not available
+      }
+      return Boolean(model.apiKey || getSettings().contextHubApiKey);
     }
 
     const getDefaultApiKey = this.providerApiKeyMap[model.provider as ChatModelProviders];

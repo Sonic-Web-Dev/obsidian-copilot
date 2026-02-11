@@ -70,6 +70,8 @@ export interface CopilotSettings {
   githubCopilotAccessToken: string;
   githubCopilotToken: string;
   githubCopilotTokenExpiresAt: number;
+  // ContextHub (token auto-populated from contexthub-obsidian companion plugin)
+  contextHubApiKey: string;
   defaultChainType: ChainType;
   defaultModelKey: string;
   embeddingModelKey: string;

@@ -1,13 +1,13 @@
 {
-  "id": "copilot",
-  "name": "Copilot",
-  "version": "3.2.1",
+  "id": "contexthub-copilot",
+  "name": "ContextHub Copilot",
+  "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "Your AI Copilot: Chat with Your Second Brain, Learn Faster, Work Smarter.",
-  "author": "Logan Yang",
-  "authorUrl": "https://twitter.com/logancyang",
+  "description": "AI chat for Obsidian with ContextHub Brain integration. Based on obsidian-copilot by Logan Yang.",
+  "author": "ContextHub (based on obsidian-copilot by Logan Yang)",
+  "authorUrl": "https://contexthub.md",
+  "isDesktopOnly": false,
   "fundingUrl": {
-    "Buy Me a Coffee": "https://www.buymeacoffee.com/logancyang",
-    "GitHub Sponsor": "https://github.com/sponsors/logancyang"
+    "Original Author - Logan Yang": "https://www.buymeacoffee.com/logancyang"
   }
 }

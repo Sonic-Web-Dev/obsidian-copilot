@@ -1,0 +1,10 @@
+This software is based on obsidian-copilot
+(https://github.com/logancyang/obsidian-copilot)
+Copyright (c) Logan Yang and contributors
+Licensed under AGPL-3.0
+
+Modifications by ContextHub (https://contexthub.md):
+- Added ContextHub provider with OCXP gateway routing
+- Added AG-UI protocol support (planned)
+- Added mission/project context injection
+- Added Cognito authentication integration via contexthub-obsidian companion plugin

@@ -197,6 +197,10 @@ export enum ChatModels {
   OPENROUTER_GROK_4_1_FAST = "x-ai/grok-4.1-fast",
   SILICONFLOW_DEEPSEEK_V3 = "deepseek-ai/DeepSeek-V3",
   SILICONFLOW_DEEPSEEK_R1 = "deepseek-ai/DeepSeek-R1",
+  // ContextHub models (routed through OCXP gateway to AWS Bedrock AgentCore)
+  CONTEXTHUB_HAIKU = "contexthub-haiku",
+  CONTEXTHUB_SONNET = "contexthub-sonnet",
+  CONTEXTHUB_OPUS = "contexthub-opus",
 }
 
 // Model Providers
@@ -218,6 +222,7 @@ export enum ChatModelProviders {
   COHEREAI = "cohereai",
   SILICONFLOW = "siliconflow",
   GITHUB_COPILOT = "github-copilot",
+  CONTEXTHUB = "contexthub",
 }
 
 export enum ModelCapability {
@@ -422,6 +427,33 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
     isBuiltIn: false,
     baseUrl: "https://api.siliconflow.com/v1",
     capabilities: [ModelCapability.REASONING],
+  },
+  // ContextHub models (routed through OCXP gateway to AWS Bedrock AgentCore)
+  {
+    name: ChatModels.CONTEXTHUB_HAIKU,
+    provider: ChatModelProviders.CONTEXTHUB,
+    enabled: true,
+    isBuiltIn: true,
+    core: true,
+    projectEnabled: true,
+  },
+  {
+    name: ChatModels.CONTEXTHUB_SONNET,
+    provider: ChatModelProviders.CONTEXTHUB,
+    enabled: true,
+    isBuiltIn: true,
+    core: true,
+    projectEnabled: true,
+    capabilities: [ModelCapability.VISION],
+  },
+  {
+    name: ChatModels.CONTEXTHUB_OPUS,
+    provider: ChatModelProviders.CONTEXTHUB,
+    enabled: true,
+    isBuiltIn: true,
+    core: true,
+    projectEnabled: true,
+    capabilities: [ModelCapability.REASONING, ModelCapability.VISION],
   },
 ];
 
@@ -715,6 +747,14 @@ export const ProviderInfo: Record<Provider, ProviderMetadata> = {
     keyManagementURL: "https://github.com/settings/apps/authorizations",
     listModelURL: "",
   },
+  [ChatModelProviders.CONTEXTHUB]: {
+    label: "ContextHub",
+    host: "http://localhost:8000/ocxp",
+    curlBaseURL: "http://localhost:8000/ocxp",
+    keyManagementURL: "",
+    listModelURL: "",
+    testModel: ChatModels.CONTEXTHUB_SONNET,
+  },
 };
 
 // Map provider to its settings key for API key
@@ -733,6 +773,7 @@ export const ProviderSettingsKeyMap: Record<SettingKeyProviders, keyof CopilotSe
   "amazon-bedrock": "amazonBedrockApiKey",
   siliconflow: "siliconflowApiKey",
   "github-copilot": "githubCopilotToken",
+  contexthub: "contextHubApiKey",
 };
 
 export enum VAULT_VECTOR_STORE_STRATEGY {
@@ -851,6 +892,8 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   githubCopilotAccessToken: "",
   githubCopilotToken: "",
   githubCopilotTokenExpiresAt: 0,
+  // ContextHub (token auto-populated from contexthub-obsidian companion plugin)
+  contextHubApiKey: "",
   defaultChainType: ChainType.LLM_CHAIN,
   defaultModelKey: ChatModels.OPENROUTER_GEMINI_2_5_FLASH + "|" + ChatModelProviders.OPENROUTERAI,
   embeddingModelKey:
