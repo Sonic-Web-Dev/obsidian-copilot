@@ -976,9 +976,10 @@ tags:
 
       const result = await persistenceManager.loadChat(mockFile);
 
-      expect(result).toHaveLength(2);
-      expect(result[0].sender).toBe(USER_SENDER);
-      expect(result[1].sender).toBe(AI_SENDER);
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0].sender).toBe(USER_SENDER);
+      expect(result.messages[1].sender).toBe(AI_SENDER);
+      expect(result.missionContext).toBeNull();
     });
   });
 

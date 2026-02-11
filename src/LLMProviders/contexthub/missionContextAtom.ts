@@ -1,5 +1,5 @@
 import { atom, useAtom } from "jotai";
-import { settingsStore } from "@/settings/model";
+import { settingsStore, updateSetting } from "@/settings/model";
 
 export interface MissionContextOverride {
   missionId: string;
@@ -21,4 +21,15 @@ export function getMissionContext(): MissionContextOverride | null {
 
 export function useMissionContext() {
   return useAtom(missionContextAtom, { store: settingsStore });
+}
+
+/**
+ * Subscribe to atom changes and persist to CopilotSettings.
+ * Returns unsubscribe function for cleanup.
+ */
+export function subscribeMissionContextPersistence(): () => void {
+  return settingsStore.sub(missionContextAtom, () => {
+    const ctx = settingsStore.get(missionContextAtom);
+    updateSetting("activeMissionContext", ctx ?? null);
+  });
 }

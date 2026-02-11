@@ -1,5 +1,8 @@
 import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
-import { setMissionContext } from "@/LLMProviders/contexthub/missionContextAtom";
+import {
+  setMissionContext,
+  subscribeMissionContextPersistence,
+} from "@/LLMProviders/contexthub/missionContextAtom";
 import { getContextHubPluginAPI } from "@/LLMProviders/contexthub/helpers";
 import ProjectManager from "@/LLMProviders/projectManager";
 import {
@@ -98,6 +101,17 @@ export default class CopilotPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
+
+    // Restore mission context from persisted settings (survives reload)
+    const savedMissionCtx = getSettings().activeMissionContext;
+    if (savedMissionCtx) {
+      setMissionContext(savedMissionCtx);
+    }
+
+    // Persist mission context changes to settings automatically
+    const unsubMission = subscribeMissionContextPersistence();
+    this.register(() => unsubMission());
+
     this.settingsUnsubscriber = subscribeToSettingsChange(async (prev, next) => {
       if (next.enableEncryption) {
         await this.saveData(await encryptAllKeys(next));
@@ -209,14 +223,22 @@ export default class CopilotPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on(
         "contexthub:open-copilot-chat" as any,
-        async (data: { missionId?: string; sessionId?: string }) => {
+        async (data: {
+          missionId?: string;
+          sessionId?: string;
+          missionName?: string;
+          projectId?: string;
+          projectName?: string;
+        }) => {
           // Store mission context in atom for the entire chat session
           if (data?.missionId || data?.sessionId) {
             const ch = getContextHubPluginAPI();
             setMissionContext({
               missionId: data.missionId ?? "",
               sessionId: data.sessionId ?? "",
-              projectId: ch?.getActiveProjectId?.() ?? undefined,
+              projectId: data.projectId ?? ch?.getActiveProjectId?.() ?? undefined,
+              missionName: data.missionName,
+              projectName: data.projectName,
             });
           }
 

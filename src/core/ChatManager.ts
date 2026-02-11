@@ -12,6 +12,7 @@ import { processPrompt, type ProcessedPromptResult } from "@/commands/customComm
 import { FileParserManager } from "@/tools/FileParserManager";
 import ChainManager from "@/LLMProviders/chainManager";
 import ProjectManager from "@/LLMProviders/projectManager";
+import { setMissionContext } from "@/LLMProviders/contexthub/missionContextAtom";
 import { updateChatMemory } from "@/chatUtils";
 import CopilotPlugin from "@/main";
 import { ContextManager } from "./ContextManager";
@@ -812,7 +813,14 @@ export class ChatManager {
     this.clearMessages();
 
     // Load messages from file - only restores message text and context references (not fetched content)
-    const messages = await this.persistenceManager.loadChat(file);
+    const { messages, missionContext } = await this.persistenceManager.loadChat(file);
+
+    // Restore mission context atom if the loaded chat had one
+    if (missionContext) {
+      setMissionContext(missionContext);
+    } else {
+      setMissionContext(null);
+    }
 
     // Add messages to the current repository
     const currentRepo = this.getCurrentMessageRepo();

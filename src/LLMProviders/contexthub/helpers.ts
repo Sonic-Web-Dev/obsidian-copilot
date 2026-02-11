@@ -1,6 +1,9 @@
 import { ChatModelProviders } from "@/constants";
 import { getMissionContext } from "./missionContextAtom";
 
+/** Loose UUID v4 check -- rejects obvious non-UUIDs like placeholders */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ---------------------------------------------------------------------------
 // ContextHub companion plugin API type
 // ---------------------------------------------------------------------------
@@ -86,8 +89,8 @@ export function createContextHubHeaders(): () => Promise<Record<string, string>>
         const projectId = ch.getActiveProjectId?.();
         const sessionId = ch.getActiveSessionId?.();
         if (workspaceId) headers["X-Workspace"] = workspaceId;
-        if (missionId) headers["X-Mission"] = missionId;
-        if (projectId) headers["X-Project"] = projectId;
+        if (missionId && UUID_RE.test(missionId)) headers["X-Mission"] = missionId;
+        if (projectId && UUID_RE.test(projectId)) headers["X-Project"] = projectId;
         if (sessionId) headers["X-Session"] = sessionId;
 
         if (ch.getIdToken) {
@@ -105,8 +108,10 @@ export function createContextHubHeaders(): () => Promise<Record<string, string>>
     const override = getMissionContext();
     if (override) {
       if (override.sessionId) headers["X-Session"] = override.sessionId;
-      if (override.missionId) headers["X-Mission"] = override.missionId;
-      if (override.projectId) headers["X-Project"] = override.projectId;
+      if (override.missionId && UUID_RE.test(override.missionId))
+        headers["X-Mission"] = override.missionId;
+      if (override.projectId && UUID_RE.test(override.projectId))
+        headers["X-Project"] = override.projectId;
     }
 
     return headers;

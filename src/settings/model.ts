@@ -3,6 +3,7 @@ import { atom, createStore, useAtomValue } from "jotai";
 import { v4 as uuidv4 } from "uuid";
 
 import { type ChainType } from "@/chainFactory";
+import type { MissionContextOverride } from "@/LLMProviders/contexthub/missionContextAtom";
 import { type SortStrategy, isSortStrategy } from "@/utils/recentUsageManager";
 import {
   AGENT_MAX_ITERATIONS_LIMIT,
@@ -185,6 +186,8 @@ export interface CopilotSettings {
   defaultSystemPromptTitle: string;
   /** Token threshold for auto-compacting large context (range: 64k-1M tokens, default: 128000) */
   autoCompactThreshold: number;
+  /** Persisted mission context for global reload survival */
+  activeMissionContext?: MissionContextOverride | null;
 }
 
 export const settingsStore = createStore();

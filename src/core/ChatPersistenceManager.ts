@@ -1,6 +1,10 @@
 import { getCurrentProject } from "@/aiParams";
 import { AI_SENDER, USER_SENDER } from "@/constants";
 import ChainManager from "@/LLMProviders/chainManager";
+import {
+  getMissionContext,
+  type MissionContextOverride,
+} from "@/LLMProviders/contexthub/missionContextAtom";
 import { parseReasoningBlock } from "@/LLMProviders/chainRunner/utils/AgentReasoningState";
 import { logError, logInfo, logWarn } from "@/logger";
 import { getSettings } from "@/settings/model";
@@ -16,6 +20,11 @@ import { App, Notice, TFile, TFolder } from "obsidian";
 import { MessageRepository } from "./MessageRepository";
 
 const SAFE_FILENAME_BYTE_LIMIT = 100;
+
+export interface LoadChatResult {
+  messages: ChatMessage[];
+  missionContext: MissionContextOverride | null;
+}
 
 /**
  * Escape a string for safe YAML double-quoted string value
@@ -174,18 +183,33 @@ export class ChatPersistenceManager {
   }
 
   /**
-   * Load chat history from a markdown file
+   * Load chat history from a markdown file.
+   * Returns both parsed messages and any persisted mission context from frontmatter.
    */
-  async loadChat(file: TFile): Promise<ChatMessage[]> {
+  async loadChat(file: TFile): Promise<LoadChatResult> {
     try {
       const content = await this.app.vault.read(file);
       const messages = this.parseChatContent(content);
+
+      // Extract mission context from frontmatter
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      let missionContext: MissionContextOverride | null = null;
+      if (frontmatter?.missionId || frontmatter?.sessionId) {
+        missionContext = {
+          missionId: frontmatter.missionId ?? "",
+          sessionId: frontmatter.sessionId ?? "",
+          projectId: frontmatter.projectId ?? undefined,
+          missionName: frontmatter.missionName ?? undefined,
+          projectName: frontmatter.projectName ?? undefined,
+        };
+      }
+
       logInfo(`[ChatPersistenceManager] Loaded ${messages.length} messages from ${file.path}`);
-      return messages;
+      return { messages, missionContext };
     } catch (error) {
       logError("[ChatPersistenceManager] Error loading chat:", error);
       new Notice("Failed to load chat history. Check console for details.");
-      return [];
+      return { messages: [], missionContext: null };
     }
   }
 
@@ -661,6 +685,7 @@ ${conversationSummary}`;
   ): string {
     const settings = getSettings();
     const currentProject = getCurrentProject();
+    const missionCtx = getMissionContext();
 
     return `---
 epoch: ${firstMessageEpoch}
@@ -669,6 +694,9 @@ ${topic ? `topic: "${topic}"` : ""}
 ${lastAccessedAt ? `lastAccessedAt: ${lastAccessedAt}` : ""}
 ${currentProject ? `projectId: ${currentProject.id}` : ""}
 ${currentProject ? `projectName: ${currentProject.name}` : ""}
+${missionCtx?.missionId ? `missionId: "${escapeYamlString(missionCtx.missionId)}"` : ""}
+${missionCtx?.sessionId ? `sessionId: "${escapeYamlString(missionCtx.sessionId)}"` : ""}
+${missionCtx?.missionName ? `missionName: "${escapeYamlString(missionCtx.missionName)}"` : ""}
 tags:
   - ${settings.defaultConversationTag}
 ---

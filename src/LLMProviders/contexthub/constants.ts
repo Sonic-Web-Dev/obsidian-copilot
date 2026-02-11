@@ -75,4 +75,5 @@ export const CONTEXTHUB_SETTINGS_KEY: keyof CopilotSettings = "contextHubApiKey"
 
 export const CONTEXTHUB_DEFAULT_SETTINGS = {
   contextHubApiKey: "",
+  activeMissionContext: null as null,
 } as const;
