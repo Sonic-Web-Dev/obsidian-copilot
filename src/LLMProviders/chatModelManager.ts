@@ -39,6 +39,7 @@ import { Notice } from "obsidian";
 import { ChatOpenRouter } from "./ChatOpenRouter";
 import { BedrockChatModel, type BedrockChatModelFields } from "./BedrockChatModel";
 import { GitHubCopilotChatModel } from "@/LLMProviders/githubCopilot/GitHubCopilotChatModel";
+import { ContextHubChatModel } from "@/LLMProviders/contexthub/ContextHubChatModel";
 
 type ChatConstructorType = {
   new (config: any): any;
@@ -62,8 +63,8 @@ const CHAT_PROVIDER_CONSTRUCTORS = {
   [ChatModelProviders.DEEPSEEK]: ChatDeepSeek,
   [ChatModelProviders.AMAZON_BEDROCK]: BedrockChatModel,
   [ChatModelProviders.GITHUB_COPILOT]: GitHubCopilotChatModel,
-  // ContextHub: OpenAI-compatible endpoint (OCXP gateway -> AgentCore)
-  [ChatModelProviders.CONTEXTHUB]: ChatOpenAI,
+  // ContextHub: custom model with native fetch + SSE streaming (bypasses Obsidian's buffered requestUrl)
+  [ChatModelProviders.CONTEXTHUB]: ContextHubChatModel,
 } as const;
 
 type ChatProviderConstructMap = typeof CHAT_PROVIDER_CONSTRUCTORS;
@@ -376,17 +377,13 @@ export default class ChatModelManager {
         // because Obsidian's requestUrl doesn't support cancellation.
         fetchImplementation: customModel.enableCors ? safeFetchNoThrow : undefined,
       },
-      // ContextHub: OpenAI-compatible endpoint (OCXP gateway -> AgentCore)
-      // Token + context headers are injected per-request by createContextHubFetch()
+      // ContextHub: custom model with native fetch + SSE streaming
+      // Headers (auth + context) are injected per-request via getHeaders callback
       [ChatModelProviders.CONTEXTHUB]: {
         modelName: modelName,
-        apiKey: await getDecryptedKey(
-          customModel.apiKey || settings.contextHubApiKey || "contexthub-auto"
-        ),
-        configuration: {
-          baseURL: customModel.baseUrl || this.getContextHubBaseUrl(),
-          fetch: this.createContextHubFetch(),
-        },
+        baseUrl: customModel.baseUrl || this.getContextHubBaseUrl(),
+        streaming: customModel.stream ?? true,
+        getHeaders: this.createContextHubHeaders(),
       },
     };
 
@@ -600,37 +597,35 @@ export default class ChatModelManager {
   }
 
   /**
-   * Create a custom fetch that injects context headers AND JWT per-request.
-   * All headers are read fresh from the contexthub-obsidian companion plugin
-   * on every request, so they always reflect the current workspace/mission/project.
+   * Create a header-provider callback for ContextHubChatModel.
+   * Returns fresh auth + context headers from the contexthub-obsidian companion
+   * plugin on every invocation, so they always reflect the current state.
    */
-  private createContextHubFetch(): typeof safeFetch {
-    return async (url: string, init?: RequestInit): Promise<Response> => {
-      const headers = new Headers(init?.headers);
+  private createContextHubHeaders(): () => Promise<Record<string, string>> {
+    return async (): Promise<Record<string, string>> => {
+      const headers: Record<string, string> = {};
       try {
         const app = (globalThis as any).app;
         const ch = app?.plugins?.plugins?.["contexthub"]?.api;
         if (ch) {
-          // Inject context headers (workspace, mission, project)
           const workspaceId = ch.getWorkspaceId?.();
           const missionId = ch.getActiveMissionId?.();
           const projectId = ch.getActiveProjectId?.();
-          if (workspaceId) headers.set("X-Workspace", workspaceId);
-          if (missionId) headers.set("X-Mission", missionId);
-          if (projectId) headers.set("X-Project", projectId);
+          if (workspaceId) headers["X-Workspace"] = workspaceId;
+          if (missionId) headers["X-Mission"] = missionId;
+          if (projectId) headers["X-Project"] = projectId;
 
-          // Inject JWT auth token
           if (ch.getIdToken) {
             const idToken = await ch.getIdToken();
             if (idToken) {
-              headers.set("Authorization", `Bearer ${idToken}`);
+              headers["Authorization"] = `Bearer ${idToken}`;
             }
           }
         }
       } catch {
         // Companion plugin not available -- request proceeds without context headers
       }
-      return safeFetch(url, { ...init, headers });
+      return headers;
     };
   }
 
