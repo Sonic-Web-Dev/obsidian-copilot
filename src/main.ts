@@ -230,12 +230,15 @@ export default class CopilotPlugin extends Plugin {
           projectId?: string;
           projectName?: string;
         }) => {
-          // Store mission context in atom for the entire chat session
-          if (data?.missionId || data?.sessionId) {
+          // Clear previous chat before starting new session
+          await this.handleNewChat();
+
+          // Store context in atom for the entire chat session
+          if (data?.missionId || data?.sessionId || data?.projectId) {
             const ch = getContextHubPluginAPI();
             setMissionContext({
               missionId: data.missionId ?? "",
-              sessionId: data.sessionId ?? "",
+              sessionId: data.sessionId || crypto.randomUUID(),
               projectId: data.projectId ?? ch?.getActiveProjectId?.() ?? undefined,
               missionName: data.missionName,
               projectName: data.projectName,
