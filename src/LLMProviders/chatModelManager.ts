@@ -385,7 +385,7 @@ export default class ChatModelManager {
         ),
         configuration: {
           baseURL: customModel.baseUrl || this.getContextHubBaseUrl(),
-          fetch: customModel.enableCors ? safeFetch : undefined,
+          fetch: safeFetch,
           defaultHeaders: {
             ...this.getContextHubHeaders(),
           },
@@ -594,12 +594,12 @@ export default class ChatModelManager {
       const ch = app?.plugins?.plugins?.["contexthub"]?.api;
       if (ch?.getOcxpEndpoint) {
         const endpoint = ch.getOcxpEndpoint();
-        if (endpoint) return `${endpoint}/ocxp/chat/completions`;
+        if (endpoint) return `${endpoint}/ocxp`;
       }
     } catch {
       // Companion plugin not available
     }
-    return "http://localhost:8000/ocxp/chat/completions";
+    return "http://localhost:8000/ocxp";
   }
 
   /**
