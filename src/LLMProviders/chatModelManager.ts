@@ -377,7 +377,7 @@ export default class ChatModelManager {
         fetchImplementation: customModel.enableCors ? safeFetchNoThrow : undefined,
       },
       // ContextHub: OpenAI-compatible endpoint (OCXP gateway -> AgentCore)
-      // Token is auto-populated from contexthub-obsidian companion plugin
+      // Token + context headers are injected per-request by createContextHubFetch()
       [ChatModelProviders.CONTEXTHUB]: {
         modelName: modelName,
         apiKey: await getDecryptedKey(
@@ -386,9 +386,6 @@ export default class ChatModelManager {
         configuration: {
           baseURL: customModel.baseUrl || this.getContextHubBaseUrl(),
           fetch: this.createContextHubFetch(),
-          defaultHeaders: {
-            ...this.getContextHubHeaders(),
-          },
         },
       },
     };
@@ -603,32 +600,9 @@ export default class ChatModelManager {
   }
 
   /**
-   * Get ContextHub context headers from companion plugin.
-   * Injects workspace, project, and mission context for OCXP routing.
-   */
-  private getContextHubHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
-    try {
-      const app = (globalThis as any).app;
-      const ch = app?.plugins?.plugins?.["contexthub"]?.api;
-      if (ch) {
-        const workspaceId = ch.getWorkspaceId?.();
-        const missionId = ch.getActiveMissionId?.();
-        const projectId = ch.getActiveProjectId?.();
-        if (workspaceId) headers["X-Workspace"] = workspaceId;
-        if (missionId) headers["X-Mission"] = missionId;
-        if (projectId) headers["X-Project"] = projectId;
-      }
-    } catch {
-      // Companion plugin not available
-    }
-    return headers;
-  }
-
-  /**
-   * Create a custom fetch that injects a fresh JWT Authorization header per-request.
-   * Token is fetched from the contexthub-obsidian companion plugin's getIdToken()
-   * which handles auto-refresh. Falls back gracefully if plugin is unavailable.
+   * Create a custom fetch that injects context headers AND JWT per-request.
+   * All headers are read fresh from the contexthub-obsidian companion plugin
+   * on every request, so they always reflect the current workspace/mission/project.
    */
   private createContextHubFetch(): typeof safeFetch {
     return async (url: string, init?: RequestInit): Promise<Response> => {
@@ -636,14 +610,25 @@ export default class ChatModelManager {
       try {
         const app = (globalThis as any).app;
         const ch = app?.plugins?.plugins?.["contexthub"]?.api;
-        if (ch?.getIdToken) {
-          const idToken = await ch.getIdToken();
-          if (idToken) {
-            headers.set("Authorization", `Bearer ${idToken}`);
+        if (ch) {
+          // Inject context headers (workspace, mission, project)
+          const workspaceId = ch.getWorkspaceId?.();
+          const missionId = ch.getActiveMissionId?.();
+          const projectId = ch.getActiveProjectId?.();
+          if (workspaceId) headers.set("X-Workspace", workspaceId);
+          if (missionId) headers.set("X-Mission", missionId);
+          if (projectId) headers.set("X-Project", projectId);
+
+          // Inject JWT auth token
+          if (ch.getIdToken) {
+            const idToken = await ch.getIdToken();
+            if (idToken) {
+              headers.set("Authorization", `Bearer ${idToken}`);
+            }
           }
         }
       } catch {
-        // Companion plugin not available -- request proceeds without auth
+        // Companion plugin not available -- request proceeds without context headers
       }
       return safeFetch(url, { ...init, headers });
     };
