@@ -665,17 +665,11 @@ export default class ChatModelManager {
       return Boolean(apiKey);
     }
 
-    // ContextHub: companion plugin handles auth via OCXP gateway, not the SDK API key.
-    // Accept if companion plugin is loaded OR a manual key is configured.
+    // ContextHub: auth is handled server-side by the OCXP gateway.
+    // The API key passed to ChatOpenAI is a placeholder ("contexthub-auto").
+    // Always return true to avoid timing issues with companion plugin loading.
     if (model.provider === ChatModelProviders.CONTEXTHUB) {
-      try {
-        const app = (globalThis as any).app;
-        const ch = app?.plugins?.plugins?.["contexthub"]?.api;
-        if (ch) return true;
-      } catch {
-        // Companion plugin not available
-      }
-      return Boolean(model.apiKey || getSettings().contextHubApiKey);
+      return true;
     }
 
     const getDefaultApiKey = this.providerApiKeyMap[model.provider as ChatModelProviders];
