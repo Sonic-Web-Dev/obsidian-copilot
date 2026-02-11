@@ -385,7 +385,7 @@ export default class ChatModelManager {
         ),
         configuration: {
           baseURL: customModel.baseUrl || this.getContextHubBaseUrl(),
-          fetch: safeFetch,
+          fetch: this.createContextHubFetch(),
           defaultHeaders: {
             ...this.getContextHubHeaders(),
           },
@@ -623,6 +623,30 @@ export default class ChatModelManager {
       // Companion plugin not available
     }
     return headers;
+  }
+
+  /**
+   * Create a custom fetch that injects a fresh JWT Authorization header per-request.
+   * Token is fetched from the contexthub-obsidian companion plugin's getIdToken()
+   * which handles auto-refresh. Falls back gracefully if plugin is unavailable.
+   */
+  private createContextHubFetch(): typeof safeFetch {
+    return async (url: string, init?: RequestInit): Promise<Response> => {
+      const headers = new Headers(init?.headers);
+      try {
+        const app = (globalThis as any).app;
+        const ch = app?.plugins?.plugins?.["contexthub"]?.api;
+        if (ch?.getIdToken) {
+          const idToken = await ch.getIdToken();
+          if (idToken) {
+            headers.set("Authorization", `Bearer ${idToken}`);
+          }
+        }
+      } catch {
+        // Companion plugin not available -- request proceeds without auth
+      }
+      return safeFetch(url, { ...init, headers });
+    };
   }
 
   // Build a map of modelKey to model config
