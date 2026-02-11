@@ -18,9 +18,9 @@ import { $createToolPillNode } from "../pills/ToolPillNode";
 import { $createFolderPillNode } from "../pills/FolderPillNode";
 import { $createWebTabPillNode } from "../pills/WebTabPillNode";
 import { $createActiveWebTabPillNode } from "../pills/ActiveWebTabPillNode";
-import { $createMissionPillNode } from "../pills/MissionPillNode";
-import { $createProjectPillNode } from "../pills/ProjectPillNode";
-import type { ContextHubMentionData } from "../hooks/useAtMentionCategories";
+import { $createMissionPillNode } from "@/LLMProviders/contexthub/mentions/MissionPillNode";
+import { $createProjectPillNode } from "@/LLMProviders/contexthub/mentions/ProjectPillNode";
+import type { ContextHubMentionData } from "@/LLMProviders/contexthub/mentions";
 import { logInfo } from "@/logger";
 import { AVAILABLE_TOOLS } from "../constants/tools";
 

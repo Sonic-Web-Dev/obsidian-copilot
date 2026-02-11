@@ -17,8 +17,8 @@ import { ActiveNotePillNode } from "@/components/chat-components/pills/ActiveNot
 import { FolderPillNode } from "@/components/chat-components/pills/FolderPillNode";
 import { WebTabPillNode } from "@/components/chat-components/pills/WebTabPillNode";
 import { ActiveWebTabPillNode } from "@/components/chat-components/pills/ActiveWebTabPillNode";
-import { MissionPillNode } from "@/components/chat-components/pills/MissionPillNode";
-import { ProjectPillNode } from "@/components/chat-components/pills/ProjectPillNode";
+import { MissionPillNode } from "@/LLMProviders/contexthub/mentions/MissionPillNode";
+import { ProjectPillNode } from "@/LLMProviders/contexthub/mentions/ProjectPillNode";
 import { KeyboardPlugin } from "@/components/chat-components/plugins/KeyboardPlugin";
 import { ValueSyncPlugin } from "@/components/chat-components/plugins/ValueSyncPlugin";
 import { FocusPlugin } from "@/components/chat-components/plugins/FocusPlugin";

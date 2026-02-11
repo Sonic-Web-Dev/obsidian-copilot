@@ -39,7 +39,12 @@ import { Notice } from "obsidian";
 import { ChatOpenRouter } from "./ChatOpenRouter";
 import { BedrockChatModel, type BedrockChatModelFields } from "./BedrockChatModel";
 import { GitHubCopilotChatModel } from "@/LLMProviders/githubCopilot/GitHubCopilotChatModel";
-import { ContextHubChatModel } from "@/LLMProviders/contexthub/ContextHubChatModel";
+import {
+  ContextHubChatModel,
+  getContextHubBaseUrl,
+  createContextHubHeaders,
+  isContextHubProvider,
+} from "@/LLMProviders/contexthub";
 
 type ChatConstructorType = {
   new (config: any): any;
@@ -580,53 +585,16 @@ export default class ChatModelManager {
 
   /**
    * Get ContextHub OCXP base URL from companion plugin or fallback to default.
-   * Reads from contexthub-obsidian plugin API if available.
    */
   private getContextHubBaseUrl(): string {
-    try {
-      const app = (globalThis as any).app;
-      const ch = app?.plugins?.plugins?.["contexthub"]?.api;
-      if (ch?.getOcxpEndpoint) {
-        const endpoint = ch.getOcxpEndpoint();
-        if (endpoint) return `${endpoint}/ocxp`;
-      }
-    } catch {
-      // Companion plugin not available
-    }
-    return "http://localhost:8000/ocxp";
+    return getContextHubBaseUrl();
   }
 
   /**
    * Create a header-provider callback for ContextHubChatModel.
-   * Returns fresh auth + context headers from the contexthub-obsidian companion
-   * plugin on every invocation, so they always reflect the current state.
    */
   private createContextHubHeaders(): () => Promise<Record<string, string>> {
-    return async (): Promise<Record<string, string>> => {
-      const headers: Record<string, string> = {};
-      try {
-        const app = (globalThis as any).app;
-        const ch = app?.plugins?.plugins?.["contexthub"]?.api;
-        if (ch) {
-          const workspaceId = ch.getWorkspaceId?.();
-          const missionId = ch.getActiveMissionId?.();
-          const projectId = ch.getActiveProjectId?.();
-          if (workspaceId) headers["X-Workspace"] = workspaceId;
-          if (missionId) headers["X-Mission"] = missionId;
-          if (projectId) headers["X-Project"] = projectId;
-
-          if (ch.getIdToken) {
-            const idToken = await ch.getIdToken();
-            if (idToken) {
-              headers["Authorization"] = `Bearer ${idToken}`;
-            }
-          }
-        }
-      } catch {
-        // Companion plugin not available -- request proceeds without context headers
-      }
-      return headers;
-    };
+    return createContextHubHeaders();
   }
 
   // Build a map of modelKey to model config
@@ -670,9 +638,7 @@ export default class ChatModelManager {
     }
 
     // ContextHub: auth is handled server-side by the OCXP gateway.
-    // The API key passed to ChatOpenAI is a placeholder ("contexthub-auto").
-    // Always return true to avoid timing issues with companion plugin loading.
-    if (model.provider === ChatModelProviders.CONTEXTHUB) {
+    if (isContextHubProvider(model.provider)) {
       return true;
     }
 

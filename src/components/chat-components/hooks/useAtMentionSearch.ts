@@ -17,7 +17,7 @@ import { useAllNotes } from "./useAllNotes";
 import { useAllFolders } from "./useAllFolders";
 import { useOpenWebTabs } from "./useOpenWebTabs";
 import { useActiveWebTabState } from "./useActiveWebTabState";
-import { useContextHubMissions, useContextHubProjects } from "./useContextHubItems";
+import { useContextHubMissions, useContextHubProjects } from "@/LLMProviders/contexthub/mentions";
 import { AtMentionCategory, AtMentionOption, CategoryOption } from "./useAtMentionCategories";
 import { getSettings } from "@/settings/model";
 

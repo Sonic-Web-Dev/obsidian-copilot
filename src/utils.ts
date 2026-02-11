@@ -9,6 +9,7 @@ import {
   SettingKeyProviders,
   USER_SENDER,
 } from "@/constants";
+import { isContextHubProvider } from "@/LLMProviders/contexthub/helpers";
 import { logInfo, logWarn } from "@/logger";
 import { CopilotSettings } from "@/settings/model";
 import { ChatMessage } from "@/types/message";
@@ -1216,7 +1217,7 @@ export function getNeedSetKeyProvider(): Provider[] {
     ChatModelProviders.LM_STUDIO,
     ChatModelProviders.AZURE_OPENAI,
     ChatModelProviders.GITHUB_COPILOT,
-    ChatModelProviders.CONTEXTHUB,
+    ChatModelProviders.CONTEXTHUB, // Auth handled server-side, no API key needed
     EmbeddingModelProviders.COPILOT_PLUS,
     EmbeddingModelProviders.COPILOT_PLUS_JINA,
   ];
@@ -1261,7 +1262,7 @@ export function checkModelApiKey(
   }
 
   // ContextHub: auth is handled server-side by the OCXP gateway, no client API key needed.
-  if (model.provider === ChatModelProviders.CONTEXTHUB) {
+  if (isContextHubProvider(model.provider)) {
     return { hasApiKey: true };
   }
 

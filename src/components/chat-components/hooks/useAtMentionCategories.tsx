@@ -1,10 +1,15 @@
 import React, { useMemo } from "react";
-import { Platform, TFile, TFolder, App } from "obsidian";
-import { FileText, Wrench, Folder, Globe, Target, Briefcase } from "lucide-react";
+import { Platform, TFile, TFolder } from "obsidian";
+import { FileText, Wrench, Folder, Globe } from "lucide-react";
 import { TypeaheadOption } from "../TypeaheadMenuContent";
 import type { WebTabContext } from "@/types/message";
+import {
+  CONTEXTHUB_MENTION_CATEGORIES,
+  isContextHubAuthenticated,
+} from "@/LLMProviders/contexthub/mentions";
 
-declare const app: App;
+// Re-export ContextHubMentionData for backward compatibility
+export type { ContextHubMentionData } from "@/LLMProviders/contexthub/mentions";
 
 export type AtMentionCategory =
   | "notes"
@@ -16,14 +21,9 @@ export type AtMentionCategory =
   | "missions"
   | "projects";
 
-export interface ContextHubMentionData {
-  id: string;
-  title: string;
-}
-
 export interface AtMentionOption extends TypeaheadOption {
   category: AtMentionCategory;
-  data: TFile | string | TFolder | WebTabContext | ContextHubMentionData;
+  data: TFile | string | TFolder | WebTabContext | { id: string; title: string };
 }
 
 export interface CategoryOption extends TypeaheadOption {
@@ -60,20 +60,8 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
     category: "folders",
     icon: <Folder className="tw-size-4" />,
   },
-  {
-    key: "missions",
-    title: "Missions",
-    subtitle: "Link a mission for context",
-    category: "missions",
-    icon: <Target className="tw-size-4" />,
-  },
-  {
-    key: "projects",
-    title: "Projects",
-    subtitle: "Link a project for context",
-    category: "projects",
-    icon: <Briefcase className="tw-size-4" />,
-  },
+  // ContextHub categories (missions, projects)
+  ...CONTEXTHUB_MENTION_CATEGORIES,
 ];
 
 /**
@@ -84,15 +72,6 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
  * @param isCopilotPlus - Whether Copilot Plus features are enabled
  * @returns Array of CategoryOption objects
  */
-function isContextHubAuthenticated(): boolean {
-  try {
-    const plugin = (app as any)?.plugins?.plugins?.["contexthub"];
-    return plugin?.api?.isAuthenticated?.() ?? false;
-  } catch {
-    return false;
-  }
-}
-
 export function useAtMentionCategories(isCopilotPlus: boolean = false): CategoryOption[] {
   return useMemo(() => {
     const chAuthenticated = isContextHubAuthenticated();

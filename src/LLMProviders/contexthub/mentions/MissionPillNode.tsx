@@ -7,9 +7,12 @@ import {
   LexicalNode,
   NodeKey,
 } from "lexical";
-import { BasePillNode, SerializedBasePillNode } from "./BasePillNode";
-import { TruncatedPillText } from "./TruncatedPillText";
-import { PillBadge } from "./PillBadge";
+import {
+  BasePillNode,
+  SerializedBasePillNode,
+} from "@/components/chat-components/pills/BasePillNode";
+import { TruncatedPillText } from "@/components/chat-components/pills/TruncatedPillText";
+import { PillBadge } from "@/components/chat-components/pills/PillBadge";
 
 export interface SerializedMissionPillNode extends SerializedBasePillNode {
   type: "mission-pill";

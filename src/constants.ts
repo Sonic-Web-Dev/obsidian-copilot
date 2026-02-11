@@ -3,6 +3,12 @@ import { type CopilotSettings } from "@/settings/model";
 import { v4 as uuidv4 } from "uuid";
 import { ChainType } from "./chainFactory";
 import { PromptSortStrategy } from "./types";
+import {
+  CONTEXTHUB_BUILTIN_MODELS,
+  CONTEXTHUB_PROVIDER_INFO,
+  CONTEXTHUB_DEFAULT_SETTINGS,
+  CONTEXTHUB_SETTINGS_KEY,
+} from "@/LLMProviders/contexthub/constants";
 
 export const BREVILABS_API_BASE_URL = "https://api.brevilabs.com/v1";
 export const BREVILABS_MODELS_BASE_URL = "https://models.brevilabs.com/v1";
@@ -429,32 +435,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
     capabilities: [ModelCapability.REASONING],
   },
   // ContextHub models (routed through OCXP gateway to AWS Bedrock AgentCore)
-  {
-    name: ChatModels.CONTEXTHUB_HAIKU,
-    provider: ChatModelProviders.CONTEXTHUB,
-    enabled: true,
-    isBuiltIn: true,
-    core: true,
-    projectEnabled: true,
-  },
-  {
-    name: ChatModels.CONTEXTHUB_SONNET,
-    provider: ChatModelProviders.CONTEXTHUB,
-    enabled: true,
-    isBuiltIn: true,
-    core: true,
-    projectEnabled: true,
-    capabilities: [ModelCapability.VISION],
-  },
-  {
-    name: ChatModels.CONTEXTHUB_OPUS,
-    provider: ChatModelProviders.CONTEXTHUB,
-    enabled: true,
-    isBuiltIn: true,
-    core: true,
-    projectEnabled: true,
-    capabilities: [ModelCapability.REASONING, ModelCapability.VISION],
-  },
+  ...CONTEXTHUB_BUILTIN_MODELS,
 ];
 
 export enum EmbeddingModelProviders {
@@ -747,14 +728,7 @@ export const ProviderInfo: Record<Provider, ProviderMetadata> = {
     keyManagementURL: "https://github.com/settings/apps/authorizations",
     listModelURL: "",
   },
-  [ChatModelProviders.CONTEXTHUB]: {
-    label: "ContextHub",
-    host: "http://localhost:8000/ocxp",
-    curlBaseURL: "http://localhost:8000/ocxp",
-    keyManagementURL: "",
-    listModelURL: "",
-    testModel: ChatModels.CONTEXTHUB_SONNET,
-  },
+  [ChatModelProviders.CONTEXTHUB]: CONTEXTHUB_PROVIDER_INFO,
 };
 
 // Map provider to its settings key for API key
@@ -773,7 +747,7 @@ export const ProviderSettingsKeyMap: Record<SettingKeyProviders, keyof CopilotSe
   "amazon-bedrock": "amazonBedrockApiKey",
   siliconflow: "siliconflowApiKey",
   "github-copilot": "githubCopilotToken",
-  contexthub: "contextHubApiKey",
+  contexthub: CONTEXTHUB_SETTINGS_KEY,
 };
 
 export enum VAULT_VECTOR_STORE_STRATEGY {
@@ -893,7 +867,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   githubCopilotToken: "",
   githubCopilotTokenExpiresAt: 0,
   // ContextHub (token auto-populated from contexthub-obsidian companion plugin)
-  contextHubApiKey: "",
+  ...CONTEXTHUB_DEFAULT_SETTINGS,
   defaultChainType: ChainType.LLM_CHAIN,
   defaultModelKey: ChatModels.OPENROUTER_GEMINI_2_5_FLASH + "|" + ChatModelProviders.OPENROUTERAI,
   embeddingModelKey:
