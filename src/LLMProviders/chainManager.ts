@@ -17,7 +17,7 @@ import {
 } from "@/LLMProviders/chainRunner/index";
 import { ContextHubChainRunner } from "@/LLMProviders/contexthub/ContextHubChainRunner";
 import { logError, logInfo } from "@/logger";
-import { getSettings, subscribeToSettingsChange } from "@/settings/model";
+import { getModelKeyFromModel, getSettings, subscribeToSettingsChange } from "@/settings/model";
 import { getSystemPrompt } from "@/system-prompts/systemPromptBuilder";
 import { ChatMessage } from "@/types/message";
 import { findCustomModel, isOSeriesModel, isSupportedChain } from "@/utils";
@@ -63,8 +63,16 @@ export default class ChainManager {
     // Initialize async operations
     this.initialize();
 
+    // Only recreate chain when model-related settings actually change.
+    // Without this guard, every trivial settings write (mission context persistence,
+    // project usage timestamps, etc.) triggers a full chain rebuild loop.
+    let prevModelFingerprint = this.getModelFingerprint();
     subscribeToSettingsChange(async () => {
-      await this.createChainWithNewModel();
+      const newFingerprint = this.getModelFingerprint();
+      if (newFingerprint !== prevModelFingerprint) {
+        prevModelFingerprint = newFingerprint;
+        await this.createChainWithNewModel();
+      }
     });
   }
 
@@ -80,6 +88,17 @@ export default class ChainManager {
 
   public getRetrievalChain(): RunnableSequence {
     return this.retrievalChain;
+  }
+
+  private getModelFingerprint(): string {
+    const settings = getSettings();
+    const modelKeys = settings.activeModels
+      .filter((m) => m.enabled)
+      .map((m) => `${getModelKeyFromModel(m)}:${m.projectEnabled ?? false}`)
+      .sort()
+      .join(",");
+    const projectModelKey = getCurrentProject()?.projectModelKey ?? "";
+    return `${getModelKey()}|${projectModelKey}|${modelKeys}`;
   }
 
   private validateChainType(chainType: ChainType): void {
