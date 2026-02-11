@@ -247,7 +247,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.COPILOT_PLUS_FLASH,
     provider: ChatModelProviders.COPILOT_PLUS,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: true,
     plusExclusive: true,
@@ -257,21 +257,21 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.OPENROUTER_GEMINI_3_FLASH_PREVIEW,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.VISION, ModelCapability.REASONING],
   },
   {
     name: ChatModels.OPENROUTER_GEMINI_3_PRO_PREVIEW,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.VISION, ModelCapability.REASONING],
   },
   {
     name: ChatModels.OPENROUTER_GEMINI_2_5_FLASH,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: true,
     projectEnabled: true,
@@ -280,7 +280,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.OPENROUTER_GEMINI_2_5_PRO,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -289,7 +289,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.OPENROUTER_GPT_5_2,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -298,7 +298,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.OPENROUTER_GPT_5_MINI,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -307,7 +307,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.GROK_4_1_FAST,
     provider: ChatModelProviders.XAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -316,7 +316,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.OPENROUTER_GROK_4_1_FAST,
     provider: ChatModelProviders.OPENROUTERAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -325,7 +325,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.GPT_5_2,
     provider: ChatModelProviders.OPENAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: true,
     capabilities: [ModelCapability.VISION],
@@ -333,7 +333,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.GPT_5_mini,
     provider: ChatModelProviders.OPENAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: true,
     capabilities: [ModelCapability.VISION],
@@ -341,7 +341,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.GPT_41,
     provider: ChatModelProviders.OPENAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -350,7 +350,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.GPT_41_mini,
     provider: ChatModelProviders.OPENAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     core: false,
     projectEnabled: true,
@@ -359,35 +359,35 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.CLAUDE_OPUS_4_6,
     provider: ChatModelProviders.ANTHROPIC,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.VISION, ModelCapability.REASONING],
   },
   {
     name: ChatModels.CLAUDE_SONNET_4_5,
     provider: ChatModelProviders.ANTHROPIC,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.VISION, ModelCapability.REASONING],
   },
   {
     name: ChatModels.GEMINI_3_FLASH_PREVIEW,
     provider: ChatModelProviders.GOOGLE,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.VISION, ModelCapability.REASONING],
   },
   {
     name: ChatModels.GEMINI_3_PRO_PREVIEW,
     provider: ChatModelProviders.GOOGLE,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.VISION, ModelCapability.REASONING],
   },
   {
     name: ChatModels.GEMINI_FLASH,
     provider: ChatModelProviders.GOOGLE,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     projectEnabled: true,
     capabilities: [ModelCapability.VISION],
@@ -395,7 +395,7 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.GEMINI_PRO,
     provider: ChatModelProviders.GOOGLE,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     projectEnabled: true,
     capabilities: [ModelCapability.VISION],
@@ -403,19 +403,19 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
   {
     name: ChatModels.AZURE_OPENAI,
     provider: ChatModelProviders.AZURE_OPENAI,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
   },
   {
     name: ChatModels.DEEPSEEK_CHAT,
     provider: ChatModelProviders.DEEPSEEK,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
   },
   {
     name: ChatModels.DEEPSEEK_REASONER,
     provider: ChatModelProviders.DEEPSEEK,
-    enabled: true,
+    enabled: false,
     isBuiltIn: true,
     capabilities: [ModelCapability.REASONING],
   },
@@ -869,7 +869,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   // ContextHub (token auto-populated from contexthub-obsidian companion plugin)
   ...CONTEXTHUB_DEFAULT_SETTINGS,
   defaultChainType: ChainType.LLM_CHAIN,
-  defaultModelKey: ChatModels.OPENROUTER_GEMINI_2_5_FLASH + "|" + ChatModelProviders.OPENROUTERAI,
+  defaultModelKey: ChatModels.CONTEXTHUB_OPUS + "|" + ChatModelProviders.CONTEXTHUB,
   embeddingModelKey:
     EmbeddingModels.OPENROUTER_OPENAI_EMBEDDING_SMALL + "|" + EmbeddingModelProviders.OPENROUTERAI,
   temperature: DEFAULT_MODEL_SETTING.TEMPERATURE,
