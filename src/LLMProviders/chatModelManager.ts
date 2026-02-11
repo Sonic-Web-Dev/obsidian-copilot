@@ -665,12 +665,13 @@ export default class ChatModelManager {
       return Boolean(apiKey);
     }
 
-    // ContextHub: check companion plugin for auth, or accept manual key
+    // ContextHub: companion plugin handles auth via OCXP gateway, not the SDK API key.
+    // Accept if companion plugin is loaded OR a manual key is configured.
     if (model.provider === ChatModelProviders.CONTEXTHUB) {
       try {
         const app = (globalThis as any).app;
         const ch = app?.plugins?.plugins?.["contexthub"]?.api;
-        if (ch?.isAuthenticated?.()) return true;
+        if (ch) return true;
       } catch {
         // Companion plugin not available
       }
