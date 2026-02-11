@@ -8,7 +8,9 @@ import {
   buildToolCallsFromChunks,
   createAIMessageWithToolCalls,
 } from "./nativeToolCalling";
+import { createToolCallMarker, updateToolCallMarker } from "./toolCallParser";
 import { logInfo, logWarn } from "@/logger";
+import type { AGUIEvent } from "@/LLMProviders/contexthub/ContextHubChatModel";
 
 /**
  * ThinkBlockStreamer handles streaming content from various LLM providers
@@ -28,6 +30,9 @@ export class ThinkBlockStreamer {
   // Native tool call accumulation
   private toolCallChunks: Map<number, ToolCallChunk> = new Map();
   private accumulatedToolCalls: NativeToolCall[] = [];
+
+  // AG-UI tool call tracking (from x_agui extension field)
+  private aguiToolCalls: Map<string, { name: string; args: string }> = new Map();
 
   constructor(
     private updateCurrentAiMessage: (message: string) => void,
@@ -209,6 +214,62 @@ export class ThinkBlockStreamer {
     }
   }
 
+  /**
+   * Handle AG-UI events forwarded via x_agui extension field on stream chunks.
+   * Converts TOOL_CALL_START/ARGS/END lifecycle events into tool call markers
+   * embedded in the streaming text, which the existing rendering pipeline renders.
+   */
+  private handleAGUIEvent(event: AGUIEvent): void {
+    const toolCallId = (event.toolCallId as string) || `agui-${Date.now()}`;
+
+    switch (event.type) {
+      case "TOOL_CALL_START": {
+        const name = (event.name as string) || "agent_tool";
+        const displayName = name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        this.aguiToolCalls.set(toolCallId, { name, args: "" });
+        // Embed executing marker (will be updated on TOOL_CALL_END)
+        this.fullResponse += createToolCallMarker(
+          toolCallId,
+          name,
+          displayName,
+          "wrench",
+          "",
+          true, // isExecuting
+          "",
+          ""
+        );
+        break;
+      }
+      case "TOOL_CALL_ARGS": {
+        const existing = this.aguiToolCalls.get(toolCallId);
+        if (existing && typeof event.args === "string") {
+          existing.args += event.args;
+        }
+        break;
+      }
+      case "TOOL_CALL_END": {
+        const existing = this.aguiToolCalls.get(toolCallId);
+        if (existing) {
+          const result =
+            typeof event.result === "string"
+              ? event.result
+              : JSON.stringify(event.result ?? existing.args ?? "");
+          this.fullResponse = updateToolCallMarker(this.fullResponse, toolCallId, result);
+          this.aguiToolCalls.delete(toolCallId);
+        }
+        break;
+      }
+      case "STATE_DELTA":
+      case "STATE_SNAPSHOT": {
+        // State events are informational -- no UI rendering needed yet
+        logInfo(`[ThinkBlockStreamer] AG-UI state event: ${event.type}`);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
   processChunk(chunk: any) {
     // Detect truncation using multi-provider detector
     const truncationResult = detectTruncation(chunk);
@@ -220,6 +281,12 @@ export class ThinkBlockStreamer {
     const usage = extractTokenUsage(chunk);
     if (usage) {
       this.tokenUsage = usage;
+    }
+
+    // Handle AG-UI events forwarded via x_agui extension field
+    const aguiEvent = chunk.response_metadata?.x_agui as AGUIEvent | undefined;
+    if (aguiEvent) {
+      this.handleAGUIEvent(aguiEvent);
     }
 
     // Handle native tool call chunks (LangChain streaming)
