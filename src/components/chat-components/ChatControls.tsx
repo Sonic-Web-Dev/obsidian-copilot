@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Download,
   FileText,
+  Globe,
   History,
   LibraryBig,
   MessageCirclePlus,
@@ -27,6 +28,8 @@ import {
   Sparkles,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { isContextHubAuthenticated } from "@/LLMProviders/contexthub/helpers";
+import { setMissionContext } from "@/LLMProviders/contexthub/missionContextAtom";
 import { Notice } from "obsidian";
 import React from "react";
 import {
@@ -210,6 +213,11 @@ export function ChatControls({
       await onSaveAsNote();
     }
 
+    // Clear mission context when switching away from ContextHub chain
+    if (selectedChain === ChainType.CONTEXTHUB_CHAIN && chainType !== ChainType.CONTEXTHUB_CHAIN) {
+      setMissionContext(null);
+    }
+
     setSelectedChain(chainType);
     onModeChange(chainType);
     if (chainType !== ChainType.PROJECT_CHAIN) {
@@ -233,6 +241,12 @@ export function ChatControls({
                 </div>
               )}
               {selectedChain === ChainType.PROJECT_CHAIN && "projects (alpha)"}
+              {selectedChain === ChainType.CONTEXTHUB_CHAIN && (
+                <div className="tw-flex tw-items-center tw-gap-1">
+                  <Globe className="tw-size-4" />
+                  ContextHub
+                </div>
+              )}
               <ChevronDown className="tw-mt-0.5 tw-size-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -251,6 +265,18 @@ export function ChatControls({
             >
               vault QA (free)
             </DropdownMenuItem>
+            {isContextHubAuthenticated() && (
+              <DropdownMenuItem
+                onSelect={() => {
+                  handleModeChange(ChainType.CONTEXTHUB_CHAIN);
+                }}
+              >
+                <div className="tw-flex tw-items-center tw-gap-1">
+                  <Globe className="tw-size-4" />
+                  ContextHub
+                </div>
+              </DropdownMenuItem>
+            )}
             {isPlusUser ? (
               <DropdownMenuItem
                 onSelect={() => {

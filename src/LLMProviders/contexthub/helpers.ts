@@ -1,4 +1,5 @@
 import { ChatModelProviders } from "@/constants";
+import { getMissionContext } from "./missionContextAtom";
 
 // ---------------------------------------------------------------------------
 // ContextHub companion plugin API type
@@ -99,6 +100,15 @@ export function createContextHubHeaders(): () => Promise<Record<string, string>>
     } catch {
       // Companion plugin not available -- request proceeds without context headers
     }
+
+    // Apply mission context override (takes precedence over companion plugin values)
+    const override = getMissionContext();
+    if (override) {
+      if (override.sessionId) headers["X-Session"] = override.sessionId;
+      if (override.missionId) headers["X-Mission"] = override.missionId;
+      if (override.projectId) headers["X-Project"] = override.projectId;
+    }
+
     return headers;
   };
 }

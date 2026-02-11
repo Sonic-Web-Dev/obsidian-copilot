@@ -15,6 +15,7 @@ import {
   ProjectChainRunner,
   VaultQAChainRunner,
 } from "@/LLMProviders/chainRunner/index";
+import { ContextHubChainRunner } from "@/LLMProviders/contexthub/ContextHubChainRunner";
 import { logError, logInfo } from "@/logger";
 import { getSettings, subscribeToSettingsChange } from "@/settings/model";
 import { getSystemPrompt } from "@/system-prompts/systemPromptBuilder";
@@ -278,6 +279,18 @@ export default class ChainManager {
         break;
       }
 
+      case ChainType.CONTEXTHUB_CHAIN: {
+        // ContextHubChainRunner handles its own model; just set chain type
+        this.chain = ChainFactory.createNewLLMChain({
+          llm: chatModel,
+          memory: memory,
+          prompt: options.prompt || chatPrompt,
+          abortController: options.abortController,
+        }) as RunnableSequence;
+        setChainType(ChainType.CONTEXTHUB_CHAIN);
+        break;
+      }
+
       default:
         this.validateChainType(chainType);
         break;
@@ -301,6 +314,8 @@ export default class ChainManager {
         return new CopilotPlusChainRunner(this);
       case ChainType.PROJECT_CHAIN:
         return new ProjectChainRunner(this);
+      case ChainType.CONTEXTHUB_CHAIN:
+        return new ContextHubChainRunner(this);
       default:
         throw new Error(`Unsupported chain type: ${chainType}`);
     }

@@ -15,6 +15,7 @@ import { resetSessionSystemPromptSettings } from "@/system-prompts";
 import { ChainType } from "@/chainFactory";
 import { useProjectContextStatus } from "@/hooks/useProjectContextStatus";
 import { logInfo, logError } from "@/logger";
+import { setMissionContext } from "@/LLMProviders/contexthub/missionContextAtom";
 import type { WebTabContext } from "@/types/message";
 
 import { ChatControls, reloadCurrentProject } from "@/components/chat-components/ChatControls";
@@ -705,6 +706,9 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
 
     // Clear messages through the new architecture
     chatUIState.clearMessages();
+
+    // Clear mission context override (session no longer applies to new chat)
+    setMissionContext(null);
 
     // Reset all session-level system prompt settings to global defaults
     resetSessionSystemPromptSettings();

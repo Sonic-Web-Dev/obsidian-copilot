@@ -1,6 +1,7 @@
 import ChatSingleMessage from "@/components/chat-components/ChatSingleMessage";
 import { RelevantNotes } from "@/components/chat-components/RelevantNotes";
 import { SuggestedPrompts } from "@/components/chat-components/SuggestedPrompts";
+import { MissionContextBanner } from "@/LLMProviders/contexthub/MissionContextBanner";
 import { USER_SENDER } from "@/constants";
 import { useChatScrolling } from "@/hooks/useChatScrolling";
 import { useSettingsValue } from "@/settings/model";
@@ -61,6 +62,7 @@ const ChatMessages = memo(
     if (!chatHistory.filter((message) => message.isVisible).length && !currentAiMessage) {
       return (
         <div className="tw-flex tw-size-full tw-flex-col tw-gap-2 tw-overflow-y-auto">
+          <MissionContextBanner />
           {showHelperComponents && settings.showRelevantNotes && (
             <RelevantNotes defaultOpen={true} key="relevant-notes-before-chat" />
           )}
@@ -77,6 +79,7 @@ const ChatMessages = memo(
 
     return (
       <div className="tw-flex tw-h-full tw-flex-1 tw-flex-col tw-overflow-hidden">
+        <MissionContextBanner />
         {showHelperComponents && settings.showRelevantNotes && (
           <RelevantNotes className="tw-mb-4" defaultOpen={false} key="relevant-notes-in-chat" />
         )}

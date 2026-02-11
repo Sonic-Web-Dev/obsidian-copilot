@@ -1,11 +1,15 @@
 import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+import { setMissionContext } from "@/LLMProviders/contexthub/missionContextAtom";
+import { getContextHubPluginAPI } from "@/LLMProviders/contexthub/helpers";
 import ProjectManager from "@/LLMProviders/projectManager";
 import {
   CustomModel,
   getCurrentProject,
+  setChainType,
   setSelectedTextContexts,
   getSelectedTextContexts,
 } from "@/aiParams";
+import { ChainType } from "@/chainFactory";
 import { NoteSelectedTextContext, SelectedTextContext } from "@/types/message";
 import { registerCommands } from "@/commands";
 import CopilotView from "@/components/CopilotView";
@@ -205,7 +209,21 @@ export default class CopilotPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on(
         "contexthub:open-copilot-chat" as any,
-        (data: { missionId?: string; sessionId?: string }) => {
+        async (data: { missionId?: string; sessionId?: string }) => {
+          // Store mission context in atom for the entire chat session
+          if (data?.missionId || data?.sessionId) {
+            const ch = getContextHubPluginAPI();
+            setMissionContext({
+              missionId: data.missionId ?? "",
+              sessionId: data.sessionId ?? "",
+              projectId: ch?.getActiveProjectId?.() ?? undefined,
+            });
+          }
+
+          // Switch chain type to ContextHub
+          setChainType(ChainType.CONTEXTHUB_CHAIN);
+
+          // Open/focus the copilot view
           this.activateView();
         }
       )

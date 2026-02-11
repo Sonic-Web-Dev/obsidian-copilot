@@ -80,6 +80,8 @@ export interface ContextHubChatModelParams extends BaseChatModelParams {
   streaming?: boolean;
   /** Async function that returns fresh auth + context headers for each request */
   getHeaders: () => Promise<Record<string, string>>;
+  /** Endpoint path appended to baseUrl. Defaults to "/chat/completions". */
+  endpointPath?: string;
 }
 
 /**
@@ -97,6 +99,7 @@ export class ContextHubChatModel extends BaseChatModel {
   streaming: boolean;
   private baseUrl: string;
   private getHeaders: () => Promise<Record<string, string>>;
+  private endpointPath: string;
 
   constructor(fields: ContextHubChatModelParams) {
     super(fields);
@@ -104,6 +107,7 @@ export class ContextHubChatModel extends BaseChatModel {
     this.baseUrl = fields.baseUrl;
     this.streaming = fields.streaming ?? true;
     this.getHeaders = fields.getHeaders;
+    this.endpointPath = fields.endpointPath ?? "/chat/completions";
   }
 
   _llmType(): string {
@@ -144,7 +148,7 @@ export class ContextHubChatModel extends BaseChatModel {
   ): Promise<ChatResult> {
     const chatMessages = this.toOpenAIMessages(messages);
     const headers = await this.getHeaders();
-    const url = `${this.baseUrl}/chat/completions`;
+    const url = `${this.baseUrl}${this.endpointPath}`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -237,7 +241,7 @@ export class ContextHubChatModel extends BaseChatModel {
 
     const chatMessages = this.toOpenAIMessages(messages);
     const headers = await this.getHeaders();
-    const url = `${this.baseUrl}/chat/completions`;
+    const url = `${this.baseUrl}${this.endpointPath}`;
 
     const response = await fetch(url, {
       method: "POST",
