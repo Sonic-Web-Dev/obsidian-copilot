@@ -16,6 +16,7 @@ import {
   isRequiredChatModel,
   providerRequiresApiKey,
 } from "@/utils/modelUtils";
+import { ChatModelProviders } from "@/constants";
 
 interface ModelSelectorProps {
   disabled?: boolean;
@@ -49,8 +50,11 @@ export function ModelSelector({
       return true;
     }
 
-    // Local providers don't require API keys
-    if (!providerRequiresApiKey(model.provider)) {
+    // Local providers don't require API keys; ContextHub auth is server-side
+    if (
+      !providerRequiresApiKey(model.provider) ||
+      model.provider === ChatModelProviders.CONTEXTHUB
+    ) {
       return true;
     }
 

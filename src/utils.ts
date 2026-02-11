@@ -1216,6 +1216,7 @@ export function getNeedSetKeyProvider(): Provider[] {
     ChatModelProviders.LM_STUDIO,
     ChatModelProviders.AZURE_OPENAI,
     ChatModelProviders.GITHUB_COPILOT,
+    ChatModelProviders.CONTEXTHUB,
     EmbeddingModelProviders.COPILOT_PLUS,
     EmbeddingModelProviders.COPILOT_PLUS_JINA,
   ];
@@ -1256,6 +1257,11 @@ export function checkModelApiKey(
           "GitHub Copilot is not authenticated. Please connect it in Settings > Copilot > Basic Tab > Set Keys.",
       };
     }
+    return { hasApiKey: true };
+  }
+
+  // ContextHub: auth is handled server-side by the OCXP gateway, no client API key needed.
+  if (model.provider === ChatModelProviders.CONTEXTHUB) {
     return { hasApiKey: true };
   }
 
