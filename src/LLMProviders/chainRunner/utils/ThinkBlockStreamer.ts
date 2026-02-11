@@ -224,7 +224,7 @@ export class ThinkBlockStreamer {
 
     switch (event.type) {
       case "TOOL_CALL_START": {
-        const name = (event.name as string) || "agent_tool";
+        const name = ((event.toolCallName || event.name) as string) || "agent_tool";
         const displayName = name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
         this.aguiToolCalls.set(toolCallId, { name, args: "" });
         // Embed executing marker (will be updated on TOOL_CALL_END)
