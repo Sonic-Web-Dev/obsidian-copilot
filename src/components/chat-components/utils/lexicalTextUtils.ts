@@ -18,12 +18,23 @@ import { $createToolPillNode } from "../pills/ToolPillNode";
 import { $createFolderPillNode } from "../pills/FolderPillNode";
 import { $createWebTabPillNode } from "../pills/WebTabPillNode";
 import { $createActiveWebTabPillNode } from "../pills/ActiveWebTabPillNode";
+import { $createMissionPillNode } from "../pills/MissionPillNode";
+import { $createProjectPillNode } from "../pills/ProjectPillNode";
+import type { ContextHubMentionData } from "../hooks/useAtMentionCategories";
 import { logInfo } from "@/logger";
 import { AVAILABLE_TOOLS } from "../constants/tools";
 
 declare const app: App;
 
-export type PillType = "notes" | "tools" | "folders" | "active-note" | "webTabs" | "activeWebTab";
+export type PillType =
+  | "notes"
+  | "tools"
+  | "folders"
+  | "active-note"
+  | "webTabs"
+  | "activeWebTab"
+  | "missions"
+  | "projects";
 
 // Type representing different kinds of parsed content segments
 export type ParsedContentType =
@@ -38,7 +49,7 @@ export type ParsedContentType =
 export type PatternType = "notes" | "urls" | "tools" | "customTemplates";
 
 // Type representing the data associated with a pill
-export type PillDataValue = TFile | TFolder | string | WebTabContext;
+export type PillDataValue = TFile | TFolder | string | WebTabContext | ContextHubMentionData;
 
 export interface PillData {
   type: PillType;
@@ -80,6 +91,16 @@ export function $createPillNode(pillData: PillData) {
       break;
     case "activeWebTab":
       return $createActiveWebTabPillNode();
+    case "missions":
+      if (data && typeof data === "object" && "id" in data && title) {
+        return $createMissionPillNode((data as { id: string }).id, title);
+      }
+      break;
+    case "projects":
+      if (data && typeof data === "object" && "id" in data && title) {
+        return $createProjectPillNode((data as { id: string }).id, title);
+      }
+      break;
   }
 
   throw new Error(`Invalid pill data: ${JSON.stringify(pillData)}`);

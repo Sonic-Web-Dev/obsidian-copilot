@@ -1,6 +1,15 @@
 import React, { useMemo } from "react";
 import { Platform, TFolder, TFile } from "obsidian";
-import { FileText, Wrench, Folder, FileClock, Globe, CircleDashed } from "lucide-react";
+import {
+  FileText,
+  Wrench,
+  Folder,
+  FileClock,
+  Globe,
+  CircleDashed,
+  Target,
+  Briefcase,
+} from "lucide-react";
 import fuzzysort from "fuzzysort";
 import { getToolDescription } from "@/tools/toolManager";
 import { AVAILABLE_TOOLS } from "../constants/tools";
@@ -8,6 +17,7 @@ import { useAllNotes } from "./useAllNotes";
 import { useAllFolders } from "./useAllFolders";
 import { useOpenWebTabs } from "./useOpenWebTabs";
 import { useActiveWebTabState } from "./useActiveWebTabState";
+import { useContextHubMissions, useContextHubProjects } from "./useContextHubItems";
 import { AtMentionCategory, AtMentionOption, CategoryOption } from "./useAtMentionCategories";
 import { getSettings } from "@/settings/model";
 
@@ -112,6 +122,39 @@ export function useAtMentionSearch(
     [openWebTabs]
   );
 
+  const chMissions = useContextHubMissions();
+  const chProjects = useContextHubProjects();
+
+  const missionItems: AtMentionOption[] = useMemo(
+    () =>
+      chMissions.map((m) => ({
+        key: `mission-${m.mission_id}`,
+        title: m.title,
+        subtitle: m.status,
+        category: "missions" as AtMentionCategory,
+        data: { id: m.mission_id, title: m.title },
+        content: undefined,
+        icon: React.createElement(Target, { className: "tw-size-4" }),
+        searchKeyword: m.title,
+      })),
+    [chMissions]
+  );
+
+  const projectItems: AtMentionOption[] = useMemo(
+    () =>
+      chProjects.map((p) => ({
+        key: `project-${p.project_id}`,
+        title: p.name,
+        subtitle: p.description,
+        category: "projects" as AtMentionCategory,
+        data: { id: p.project_id, title: p.name },
+        content: undefined,
+        icon: React.createElement(Briefcase, { className: "tw-size-4" }),
+        searchKeyword: p.name,
+      })),
+    [chProjects]
+  );
+
   return useMemo(() => {
     if (mode === "category") {
       // Show category options when no query
@@ -192,7 +235,13 @@ export function useAtMentionSearch(
           : null;
 
       // Combine all non-tool items for unified fuzzy search
-      const allNonToolItems = [...noteItems, ...folderItems, ...webTabItems];
+      const allNonToolItems = [
+        ...noteItems,
+        ...folderItems,
+        ...webTabItems,
+        ...missionItems,
+        ...projectItems,
+      ];
       const fuzzySearchResults = fuzzysort.go(query, allNonToolItems, {
         keys: ["searchKeyword"],
         limit: MAX_SEARCH_RESULTS,
@@ -224,6 +273,12 @@ export function useAtMentionSearch(
           break;
         case "webTabs":
           items = webTabItems;
+          break;
+        case "missions":
+          items = missionItems;
+          break;
+        case "projects":
+          items = projectItems;
           break;
       }
 
@@ -269,6 +324,8 @@ export function useAtMentionSearch(
     toolItems,
     folderItems,
     webTabItems,
+    missionItems,
+    projectItems,
     availableCategoryOptions,
     activeWebTab,
     currentActiveFile,

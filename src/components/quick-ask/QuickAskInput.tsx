@@ -17,6 +17,8 @@ import { ActiveNotePillNode } from "@/components/chat-components/pills/ActiveNot
 import { FolderPillNode } from "@/components/chat-components/pills/FolderPillNode";
 import { WebTabPillNode } from "@/components/chat-components/pills/WebTabPillNode";
 import { ActiveWebTabPillNode } from "@/components/chat-components/pills/ActiveWebTabPillNode";
+import { MissionPillNode } from "@/components/chat-components/pills/MissionPillNode";
+import { ProjectPillNode } from "@/components/chat-components/pills/ProjectPillNode";
 import { KeyboardPlugin } from "@/components/chat-components/plugins/KeyboardPlugin";
 import { ValueSyncPlugin } from "@/components/chat-components/plugins/ValueSyncPlugin";
 import { FocusPlugin } from "@/components/chat-components/plugins/FocusPlugin";
@@ -107,6 +109,8 @@ export const QuickAskInput = React.memo(function QuickAskInput({
         FolderPillNode,
         WebTabPillNode,
         ActiveWebTabPillNode,
+        MissionPillNode,
+        ProjectPillNode,
       ],
       onError: (error: Error) => {
         logError("QuickAskInput Lexical error:", error);
