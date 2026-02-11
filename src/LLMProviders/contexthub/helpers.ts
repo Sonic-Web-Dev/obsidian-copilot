@@ -10,9 +10,11 @@ export interface ContextHubPluginAPI {
   getWorkspaceId?(): string;
   getActiveMissionId?(): string;
   getActiveProjectId?(): string;
+  getActiveSessionId?(): string | null;
   getIdToken?(): Promise<string | null>;
   listMissions(options?: { projectId?: string; limit?: number }): Promise<any[]>;
   listProjects(options?: { limit?: number }): Promise<any[]>;
+  openCopilotChat?(options?: { missionId?: string; sessionId?: string }): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,9 +83,11 @@ export function createContextHubHeaders(): () => Promise<Record<string, string>>
         const workspaceId = ch.getWorkspaceId?.();
         const missionId = ch.getActiveMissionId?.();
         const projectId = ch.getActiveProjectId?.();
+        const sessionId = ch.getActiveSessionId?.();
         if (workspaceId) headers["X-Workspace"] = workspaceId;
         if (missionId) headers["X-Mission"] = missionId;
         if (projectId) headers["X-Project"] = projectId;
+        if (sessionId) headers["X-Session"] = sessionId;
 
         if (ch.getIdToken) {
           const idToken = await ch.getIdToken();

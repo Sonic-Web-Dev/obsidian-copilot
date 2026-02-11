@@ -201,6 +201,16 @@ export default class CopilotPlugin extends Plugin {
       })
     );
 
+    // Listen for ContextHub companion plugin's "open copilot chat" event
+    this.registerEvent(
+      this.app.workspace.on(
+        "contexthub:open-copilot-chat" as any,
+        (data: { missionId?: string; sessionId?: string }) => {
+          this.activateView();
+        }
+      )
+    );
+
     this.customCommandRegister = new CustomCommandRegister(this, this.app.vault);
     this.systemPromptRegister = new SystemPromptRegister(this, this.app.vault);
 

@@ -19,6 +19,19 @@ const CHARS_PER_TOKEN = 4;
 /**
  * SSE stream chunk in OpenAI Chat Completions format.
  */
+/**
+ * AG-UI event forwarded from the OCXP gateway as an extension field.
+ */
+export interface AGUIEvent {
+  type: string;
+  name?: string;
+  args?: unknown;
+  result?: unknown;
+  state?: unknown;
+  toolCallId?: string;
+  [key: string]: unknown;
+}
+
 interface ContextHubStreamChunk {
   choices: Array<{
     index: number;
@@ -33,6 +46,8 @@ interface ContextHubStreamChunk {
     completion_tokens: number;
     total_tokens: number;
   };
+  /** AG-UI event forwarded by the OCXP gateway */
+  x_agui?: AGUIEvent;
   model?: string;
   created?: number;
   id?: string;
@@ -360,7 +375,7 @@ export class ContextHubChatModel extends BaseChatModel {
     const choice = chunk.choices?.[0];
     const content = choice?.delta?.content || "";
 
-    const hasMetadata = choice?.finish_reason || chunk.usage || choice?.delta?.role;
+    const hasMetadata = choice?.finish_reason || chunk.usage || choice?.delta?.role || chunk.x_agui;
     if (!content && !hasMetadata) return null;
 
     const responseMetadata: Record<string, unknown> = {};
@@ -379,6 +394,9 @@ export class ContextHubChatModel extends BaseChatModel {
     }
     if (chunk.model) {
       responseMetadata.model = chunk.model;
+    }
+    if (chunk.x_agui) {
+      responseMetadata.x_agui = chunk.x_agui;
     }
 
     const messageChunk = new AIMessageChunk({
