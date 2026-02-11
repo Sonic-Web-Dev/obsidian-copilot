@@ -45,6 +45,11 @@ import {
   createContextHubHeaders,
   isContextHubProvider,
 } from "@/LLMProviders/contexthub";
+import { registerContextHubExtensions } from "@/LLMProviders/contexthub/register";
+
+// Register ContextHub UI extensions (pill nodes, @mention categories, etc.)
+// before any React components render.
+registerContextHubExtensions();
 
 type ChatConstructorType = {
   new (config: any): any;

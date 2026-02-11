@@ -4,12 +4,9 @@ import { FileText, Wrench, Folder, Globe } from "lucide-react";
 import { TypeaheadOption } from "../TypeaheadMenuContent";
 import type { WebTabContext } from "@/types/message";
 import {
-  CONTEXTHUB_MENTION_CATEGORIES,
-  isContextHubAuthenticated,
-} from "@/LLMProviders/contexthub/mentions";
-
-// Re-export ContextHubMentionData for backward compatibility
-export type { ContextHubMentionData } from "@/LLMProviders/contexthub/mentions";
+  getAdditionalMentionCategories,
+  getMentionAuthCheck,
+} from "@/LLMProviders/providerExtensions";
 
 export type AtMentionCategory =
   | "notes"
@@ -18,8 +15,7 @@ export type AtMentionCategory =
   | "activeNote"
   | "webTabs"
   | "activeWebTab"
-  | "missions"
-  | "projects";
+  | string; // extensible for provider-registered categories
 
 export interface AtMentionOption extends TypeaheadOption {
   category: AtMentionCategory;
@@ -60,8 +56,8 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
     category: "folders",
     icon: <Folder className="tw-size-4" />,
   },
-  // ContextHub categories (missions, projects)
-  ...CONTEXTHUB_MENTION_CATEGORIES,
+  // Additional categories are appended via the provider extensions registry
+  ...getAdditionalMentionCategories(),
 ];
 
 /**
@@ -74,8 +70,15 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
  */
 export function useAtMentionCategories(isCopilotPlus: boolean = false): CategoryOption[] {
   return useMemo(() => {
-    const chAuthenticated = isContextHubAuthenticated();
-    return CATEGORY_OPTIONS.filter((cat) => {
+    // Rebuild category list to pick up late registrations
+    const allCategories: CategoryOption[] = [
+      ...CATEGORY_OPTIONS.filter(
+        (c) => !getAdditionalMentionCategories().some((a) => a.key === c.key)
+      ),
+      ...getAdditionalMentionCategories(),
+    ];
+
+    return allCategories.filter((cat) => {
       // Tools require Copilot Plus
       if (cat.category === "tools") {
         return isCopilotPlus;
@@ -84,9 +87,10 @@ export function useAtMentionCategories(isCopilotPlus: boolean = false): Category
       if (cat.category === "webTabs") {
         return Platform.isDesktopApp;
       }
-      // Missions and Projects require ContextHub plugin with authentication
-      if (cat.category === "missions" || cat.category === "projects") {
-        return chAuthenticated;
+      // Check registered auth checks for provider-contributed categories
+      const authCheck = getMentionAuthCheck(cat.category);
+      if (authCheck) {
+        return authCheck();
       }
       return true;
     });

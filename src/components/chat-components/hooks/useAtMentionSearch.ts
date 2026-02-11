@@ -1,15 +1,6 @@
 import React, { useMemo } from "react";
 import { Platform, TFolder, TFile } from "obsidian";
-import {
-  FileText,
-  Wrench,
-  Folder,
-  FileClock,
-  Globe,
-  CircleDashed,
-  Target,
-  Briefcase,
-} from "lucide-react";
+import { FileText, Wrench, Folder, FileClock, Globe, CircleDashed } from "lucide-react";
 import fuzzysort from "fuzzysort";
 import { getToolDescription } from "@/tools/toolManager";
 import { AVAILABLE_TOOLS } from "../constants/tools";
@@ -17,12 +8,15 @@ import { useAllNotes } from "./useAllNotes";
 import { useAllFolders } from "./useAllFolders";
 import { useOpenWebTabs } from "./useOpenWebTabs";
 import { useActiveWebTabState } from "./useActiveWebTabState";
-import { useContextHubMissions, useContextHubProjects } from "@/LLMProviders/contexthub/mentions";
+import { getMentionSearchHook } from "@/LLMProviders/providerExtensions";
 import { AtMentionCategory, AtMentionOption, CategoryOption } from "./useAtMentionCategories";
 import { getSettings } from "@/settings/model";
 
 // Maximum number of results to show in @ mention search
 const MAX_SEARCH_RESULTS = 30;
+
+// Stable empty array to avoid re-renders when no search hook is registered
+const EMPTY_ITEMS: any[] = [];
 
 /**
  * Custom hook for @ mention search results with unified fuzzy search
@@ -122,37 +116,47 @@ export function useAtMentionSearch(
     [openWebTabs]
   );
 
-  const chMissions = useContextHubMissions();
-  const chProjects = useContextHubProjects();
+  // Dynamically call registered mention search hooks from provider extensions
+  const missionsHook = getMentionSearchHook("missions");
+  const projectsHook = getMentionSearchHook("projects");
+  // Hooks are registered at startup (before first render), so the conditional branch is stable.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const chMissions = missionsHook ? missionsHook() : EMPTY_ITEMS;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const chProjects = projectsHook ? projectsHook() : EMPTY_ITEMS;
+
+  // Look up icons from the registered category options
+  const missionCatIcon = availableCategoryOptions.find((c) => c.category === "missions")?.icon;
+  const projectCatIcon = availableCategoryOptions.find((c) => c.category === "projects")?.icon;
 
   const missionItems: AtMentionOption[] = useMemo(
     () =>
-      chMissions.map((m) => ({
+      chMissions.map((m: any) => ({
         key: `mission-${m.mission_id}`,
         title: m.title,
         subtitle: m.status,
         category: "missions" as AtMentionCategory,
         data: { id: m.mission_id, title: m.title },
         content: undefined,
-        icon: React.createElement(Target, { className: "tw-size-4" }),
+        icon: missionCatIcon,
         searchKeyword: m.title,
       })),
-    [chMissions]
+    [chMissions, missionCatIcon]
   );
 
   const projectItems: AtMentionOption[] = useMemo(
     () =>
-      chProjects.map((p) => ({
+      chProjects.map((p: any) => ({
         key: `project-${p.project_id}`,
         title: p.name,
         subtitle: p.description,
         category: "projects" as AtMentionCategory,
         data: { id: p.project_id, title: p.name },
         content: undefined,
-        icon: React.createElement(Briefcase, { className: "tw-size-4" }),
+        icon: projectCatIcon,
         searchKeyword: p.name,
       })),
-    [chProjects]
+    [chProjects, projectCatIcon]
   );
 
   return useMemo(() => {

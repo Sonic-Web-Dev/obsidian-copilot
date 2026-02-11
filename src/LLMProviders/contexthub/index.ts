@@ -21,6 +21,9 @@ export {
   type ContextHubPluginAPI,
 } from "./helpers";
 
+// Registration
+export { registerContextHubExtensions } from "./register";
+
 // Mentions
 export {
   useContextHubMissions,

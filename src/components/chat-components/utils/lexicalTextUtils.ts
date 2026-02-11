@@ -18,9 +18,7 @@ import { $createToolPillNode } from "../pills/ToolPillNode";
 import { $createFolderPillNode } from "../pills/FolderPillNode";
 import { $createWebTabPillNode } from "../pills/WebTabPillNode";
 import { $createActiveWebTabPillNode } from "../pills/ActiveWebTabPillNode";
-import { $createMissionPillNode } from "@/LLMProviders/contexthub/mentions/MissionPillNode";
-import { $createProjectPillNode } from "@/LLMProviders/contexthub/mentions/ProjectPillNode";
-import type { ContextHubMentionData } from "@/LLMProviders/contexthub/mentions";
+import { getPillFactory } from "@/LLMProviders/providerExtensions";
 import { logInfo } from "@/logger";
 import { AVAILABLE_TOOLS } from "../constants/tools";
 
@@ -33,8 +31,7 @@ export type PillType =
   | "active-note"
   | "webTabs"
   | "activeWebTab"
-  | "missions"
-  | "projects";
+  | string; // extensible for provider-registered pill types
 
 // Type representing different kinds of parsed content segments
 export type ParsedContentType =
@@ -49,7 +46,12 @@ export type ParsedContentType =
 export type PatternType = "notes" | "urls" | "tools" | "customTemplates";
 
 // Type representing the data associated with a pill
-export type PillDataValue = TFile | TFolder | string | WebTabContext | ContextHubMentionData;
+export type PillDataValue =
+  | TFile
+  | TFolder
+  | string
+  | WebTabContext
+  | { id: string; title: string };
 
 export interface PillData {
   type: PillType;
@@ -91,16 +93,14 @@ export function $createPillNode(pillData: PillData) {
       break;
     case "activeWebTab":
       return $createActiveWebTabPillNode();
-    case "missions":
-      if (data && typeof data === "object" && "id" in data && title) {
-        return $createMissionPillNode((data as { id: string }).id, title);
+    default: {
+      // Check provider extension registry for registered pill factories
+      const factory = getPillFactory(type);
+      if (factory && data && typeof data === "object" && "id" in data && title) {
+        return factory(data as { id: string }, title);
       }
       break;
-    case "projects":
-      if (data && typeof data === "object" && "id" in data && title) {
-        return $createProjectPillNode((data as { id: string }).id, title);
-      }
-      break;
+    }
   }
 
   throw new Error(`Invalid pill data: ${JSON.stringify(pillData)}`);

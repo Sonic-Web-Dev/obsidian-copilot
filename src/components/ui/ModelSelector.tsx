@@ -16,7 +16,7 @@ import {
   isRequiredChatModel,
   providerRequiresApiKey,
 } from "@/utils/modelUtils";
-import { isContextHubProvider } from "@/LLMProviders/contexthub/helpers";
+import { isNoApiKeyProvider } from "@/LLMProviders/providerExtensions";
 
 interface ModelSelectorProps {
   disabled?: boolean;
@@ -50,8 +50,8 @@ export function ModelSelector({
       return true;
     }
 
-    // Local providers don't require API keys; ContextHub auth is server-side
-    if (!providerRequiresApiKey(model.provider) || isContextHubProvider(model.provider)) {
+    // Local providers don't require API keys; some providers handle auth server-side
+    if (!providerRequiresApiKey(model.provider) || isNoApiKeyProvider(model.provider)) {
       return true;
     }
 
