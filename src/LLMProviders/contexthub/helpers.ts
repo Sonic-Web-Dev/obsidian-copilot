@@ -61,12 +61,12 @@ export function getContextHubBaseUrl(): string {
     const ch = getContextHubPluginAPI();
     if (ch?.getOcxpEndpoint) {
       const endpoint = ch.getOcxpEndpoint();
-      if (endpoint) return `${endpoint}/ocxp`;
+      if (endpoint) return `${endpoint}/v1`;
     }
   } catch {
     // Companion plugin not available
   }
-  return "http://localhost:8000/ocxp";
+  return "http://localhost:8000/v1";
 }
 
 // ---------------------------------------------------------------------------

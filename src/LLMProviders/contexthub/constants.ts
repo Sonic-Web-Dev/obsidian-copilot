@@ -56,8 +56,8 @@ export const CONTEXTHUB_BUILTIN_MODELS: CustomModel[] = [
 
 export const CONTEXTHUB_PROVIDER_INFO: ProviderMetadata = {
   label: "ContextHub",
-  host: "http://localhost:8000/ocxp",
-  curlBaseURL: "http://localhost:8000/ocxp",
+  host: "http://localhost:8000/v1",
+  curlBaseURL: "http://localhost:8000/v1",
   keyManagementURL: "",
   listModelURL: "",
   testModel: ChatModels.CONTEXTHUB_SONNET,
