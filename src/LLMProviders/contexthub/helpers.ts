@@ -10,7 +10,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export interface ContextHubPluginAPI {
   isAuthenticated(): boolean;
-  getOcxpEndpoint?(): string;
+  getContextHubEndpoint?(): string;
   getWorkspaceId?(): string;
   getActiveMissionId?(): string;
   getActiveProjectId?(): string;
@@ -61,8 +61,8 @@ export function isContextHubAuthenticated(): boolean {
 export function getContextHubBaseUrl(): string {
   try {
     const ch = getContextHubPluginAPI();
-    if (ch?.getOcxpEndpoint) {
-      const endpoint = ch.getOcxpEndpoint();
+    if (ch?.getContextHubEndpoint) {
+      const endpoint = ch.getContextHubEndpoint();
       if (endpoint) return `${endpoint}/v1`;
     }
   } catch {
