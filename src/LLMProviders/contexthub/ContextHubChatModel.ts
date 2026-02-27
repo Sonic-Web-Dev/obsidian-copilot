@@ -101,6 +101,9 @@ export class ContextHubChatModel extends BaseChatModel {
   private getHeaders: () => Promise<Record<string, string>>;
   private endpointPath: string;
 
+  /** Track active AG-UI slots per hintType within a streaming session */
+  private activeAgUiSlots = new Map<string, string>();
+
   constructor(fields: ContextHubChatModelParams) {
     super(fields);
     this.modelName = fields.modelName;
@@ -206,6 +209,14 @@ export class ContextHubChatModel extends BaseChatModel {
   }
 
   /**
+   * Reset AG-UI slot tracking between streaming sessions.
+   * Called automatically at the start of each _streamResponseChunks invocation.
+   */
+  resetAgUiSlots(): void {
+    this.activeAgUiSlots.clear();
+  }
+
+  /**
    * Streaming generation using native fetch + eventsource-parser.
    * Reads SSE events from a real ReadableStream (not Obsidian's buffered requestUrl).
    */
@@ -214,6 +225,9 @@ export class ContextHubChatModel extends BaseChatModel {
     options: this["ParsedCallOptions"],
     runManager?: CallbackManagerForLLMRun
   ): AsyncGenerator<ChatGenerationChunk> {
+    // Reset AG-UI slot tracking for this new streaming session
+    this.activeAgUiSlots.clear();
+
     // If streaming is disabled, fall back to _generate and yield a single chunk
     if (!this.streaming) {
       const result = await this._generate(messages, options, runManager);
@@ -377,9 +391,47 @@ export class ContextHubChatModel extends BaseChatModel {
    */
   private processStreamChunk(chunk: ContextHubStreamChunk): ChatGenerationChunk | null {
     const choice = chunk.choices?.[0];
-    const content = choice?.delta?.content || "";
+    let content = choice?.delta?.content || "";
 
-    const hasMetadata = choice?.finish_reason || chunk.usage || choice?.delta?.role || chunk.x_agui;
+    // --- AG-UI CUSTOM events: slot injection ---
+    // Intercept CUSTOM events before ThinkBlockStreamer sees them.
+    // Inject a slot div into content and emit workspace event for our plugin to render.
+    let strippedXAgui = chunk.x_agui;
+    if (chunk.x_agui?.type === "CUSTOM") {
+      const hintType = (chunk.x_agui.name as string) || "";
+      if (hintType) {
+        let slotId = this.activeAgUiSlots.get(hintType);
+        const isUpdate = !!slotId;
+
+        if (!slotId) {
+          slotId = `agui-${hintType}-${Date.now()}`;
+          this.activeAgUiSlots.set(hintType, slotId);
+        }
+
+        if (!isUpdate) {
+          // First event for this hintType: inject slot div into content
+          // HTML passthrough survives Obsidian's MarkdownRenderer
+          content += `\n<div class="ch-agui-slot" data-slot-id="${slotId}" data-hint-type="${hintType}"></div>\n`;
+        }
+
+        // Notify contexthub-obsidian plugin with full event data
+        try {
+          const data = chunk.x_agui.value ?? chunk.x_agui;
+          (globalThis as any).app?.workspace?.trigger("contexthub:agui-custom", {
+            slotId,
+            hintType,
+            data,
+            isUpdate,
+          });
+        } catch {
+          /* companion plugin not loaded */
+        }
+      }
+      strippedXAgui = undefined; // Don't pass CUSTOM events to ThinkBlockStreamer
+    }
+
+    const hasMetadata =
+      choice?.finish_reason || chunk.usage || choice?.delta?.role || strippedXAgui;
     if (!content && !hasMetadata) return null;
 
     const responseMetadata: Record<string, unknown> = {};
@@ -399,8 +451,8 @@ export class ContextHubChatModel extends BaseChatModel {
     if (chunk.model) {
       responseMetadata.model = chunk.model;
     }
-    if (chunk.x_agui) {
-      responseMetadata.x_agui = chunk.x_agui;
+    if (strippedXAgui) {
+      responseMetadata.x_agui = strippedXAgui;
     }
 
     const messageChunk = new AIMessageChunk({

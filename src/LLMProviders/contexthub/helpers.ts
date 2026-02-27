@@ -19,6 +19,8 @@ export interface ContextHubPluginAPI {
   listMissions(options?: { projectId?: string; limit?: number }): Promise<any[]>;
   listProjects(options?: { limit?: number }): Promise<any[]>;
   openCopilotChat?(options?: { missionId?: string; sessionId?: string }): void;
+  /** Handle AG-UI template interaction from copilot chat */
+  handleTemplateInteraction?(hintType: string, action: string, payload: any): void;
 }
 
 // ---------------------------------------------------------------------------
