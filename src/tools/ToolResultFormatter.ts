@@ -157,8 +157,24 @@ export class ToolResultFormatter {
           return this.formatReplaceInFile(parsedResult);
         case "readNote":
           return this.formatReadNote(parsedResult);
+        case "ocxp_health":
+          return this.formatOcxpHealth(parsedResult);
+        case "ch_project_repos":
+          return this.formatChProjectRepos(parsedResult);
+        case "ch_list_output_templates":
+          return this.formatChListOutputTemplates(parsedResult);
+        case "ocxp_warmup":
+          return this.formatOcxpWarmup(parsedResult);
+        case "ocxp_communities":
+          return this.formatOcxpCommunities(parsedResult);
+        case "ocxp_topology":
+          return this.formatOcxpTopology(parsedResult);
+        case "ch_mission_start":
+          return this.formatChMissionStart(parsedResult);
         default:
-          // For all other tools, return the raw result
+          if (toolName.startsWith("ch_") || toolName.startsWith("ocxp_")) {
+            return this.formatContextHubGeneric(parsedResult);
+          }
           return result;
       }
     } catch {
@@ -578,6 +594,135 @@ export class ToolResultFormatter {
 
     // Return message if available, otherwise the raw result
     return typeof result === "object" && result.message ? result.message : String(status);
+  }
+
+  private static extractContentText(result: any): string | null {
+    if (typeof result === "string") return result;
+    if (result && typeof result === "object") {
+      if (Array.isArray(result.content)) {
+        const textItem = result.content.find(
+          (c: any) => c && typeof c === "object" && c.type === "text" && typeof c.text === "string"
+        );
+        if (textItem) return textItem.text;
+      }
+      if (typeof result.content === "string") return result.content;
+      if (typeof result.message === "string") return result.message;
+    }
+    return null;
+  }
+
+  private static formatOcxpHealth(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      const match = text.match(/healthy/i);
+      if (match) return "API: healthy";
+      const errorMatch = text.match(/unhealthy|error|down/i);
+      if (errorMatch) return "API: unhealthy";
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    const status = result?.status || "unknown";
+    return `API: ${status}`;
+  }
+
+  private static formatChProjectRepos(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) return `${parsed.length} repositories linked`;
+        if (Array.isArray(parsed?.repositories))
+          return `${parsed.repositories.length} repositories linked`;
+      } catch {
+        // not JSON, use text
+      }
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    return "Repositories retrieved";
+  }
+
+  private static formatChListOutputTemplates(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        const templates = Array.isArray(parsed) ? parsed : parsed?.templates;
+        if (Array.isArray(templates)) {
+          const names = templates.slice(0, 3).map((t: any) => t.name || t.title || "Untitled");
+          const suffix = templates.length > 3 ? `, ... (+${templates.length - 3} more)` : "";
+          return `Found ${templates.length} templates: ${names.join(", ")}${suffix}`;
+        }
+      } catch {
+        // not JSON
+      }
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    return "Templates retrieved";
+  }
+
+  private static formatOcxpWarmup(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      if (/warm|ready|success/i.test(text)) return "Warmup: ready";
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    return "Warmup complete";
+  }
+
+  private static formatOcxpCommunities(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        const communities = Array.isArray(parsed) ? parsed : parsed?.communities;
+        if (Array.isArray(communities)) {
+          const names = communities.slice(0, 4).map((c: any) => c.name || c.label || "unnamed");
+          const suffix = communities.length > 4 ? `, ... (+${communities.length - 4} more)` : "";
+          return `Discovered ${communities.length} communities: ${names.join(", ")}${suffix}`;
+        }
+      } catch {
+        // not JSON
+      }
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    return "Communities retrieved";
+  }
+
+  private static formatOcxpTopology(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        const nodes = parsed?.nodes?.length || parsed?.node_count || 0;
+        const edges = parsed?.edges?.length || parsed?.edge_count || 0;
+        if (nodes || edges) return `Mapped ${nodes} nodes, ${edges} connections`;
+      } catch {
+        // not JSON
+      }
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    return "Topology mapped";
+  }
+
+  private static formatChMissionStart(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      const idMatch = text.match(/mission[_\s-]?id[:\s]+([a-f0-9-]+)/i);
+      if (idMatch) return `Mission started (${idMatch[1].slice(0, 8)}...)`;
+      if (/started|launched|queued|accepted/i.test(text)) return "Mission started";
+      return text.length > 120 ? text.slice(0, 120) + "..." : text;
+    }
+    return "Mission started";
+  }
+
+  private static formatContextHubGeneric(result: any): string {
+    const text = this.extractContentText(result);
+    if (text) {
+      const clean = text.replace(/\s+/g, " ").trim();
+      return clean.length > 120 ? clean.slice(0, 120) + "..." : clean;
+    }
+    const status = result?.status;
+    if (typeof status === "string") return `Status: ${status}`;
+    return typeof result === "string" ? result : JSON.stringify(result, null, 2);
   }
 
   private static formatReadNote(result: any): string {

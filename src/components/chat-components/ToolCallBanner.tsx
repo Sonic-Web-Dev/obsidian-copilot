@@ -1,8 +1,34 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ToolResultFormatter } from "@/tools/ToolResultFormatter";
-import { Check, ChevronRight, X } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Database,
+  FileText,
+  FolderTree,
+  Globe,
+  Heart,
+  Rocket,
+  Search,
+  Wrench,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import React, { useMemo, useState } from "react";
+
+const TOOL_ICONS: Record<string, LucideIcon> = {
+  ocxp_health: Heart,
+  ch_project_repos: FolderTree,
+  ch_list_output_templates: FileText,
+  ocxp_warmup: Zap,
+  ocxp_communities: Globe,
+  ocxp_topology: Database,
+  ch_mission_start: Rocket,
+  localSearch: Search,
+  webSearch: Globe,
+};
 
 // Animation constants
 // The shimmer keyframe is defined in the global CSS (see styles.css)
@@ -116,7 +142,9 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
           )}
         >
           <div className="tw-flex tw-items-center tw-gap-2">
-            <span className="tw-text-base">{emoji}</span>
+            {React.createElement(TOOL_ICONS[toolName] || Wrench, {
+              className: "tw-size-4 tw-text-muted",
+            })}
             <span className="tw-font-medium">
               {toolName === "readNote"
                 ? `${actuallyExecuting ? "Reading" : "Read"} ${displayName}`

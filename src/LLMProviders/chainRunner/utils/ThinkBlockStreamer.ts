@@ -232,7 +232,7 @@ export class ThinkBlockStreamer {
           toolCallId,
           name,
           displayName,
-          "wrench",
+          name, // pass tool name for icon lookup instead of literal "wrench"
           "",
           true, // isExecuting
           "",
