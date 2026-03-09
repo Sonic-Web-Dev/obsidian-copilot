@@ -248,6 +248,11 @@ export default class CopilotPlugin extends Plugin {
           // Switch chain type to ContextHub
           setChainType(ChainType.CONTEXTHUB_CHAIN);
 
+          // Load backend session messages if a sessionId was provided
+          if (data?.sessionId) {
+            await this.chatUIState.loadBackendSession(data.sessionId);
+          }
+
           // Open/focus the copilot view
           this.activateView();
         }

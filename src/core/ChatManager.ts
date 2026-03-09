@@ -13,12 +13,13 @@ import { FileParserManager } from "@/tools/FileParserManager";
 import ChainManager from "@/LLMProviders/chainManager";
 import ProjectManager from "@/LLMProviders/projectManager";
 import { setMissionContext } from "@/LLMProviders/contexthub/missionContextAtom";
+import { getContextHubPluginAPI } from "@/LLMProviders/contexthub/helpers";
 import { updateChatMemory } from "@/chatUtils";
 import CopilotPlugin from "@/main";
 import { ContextManager } from "./ContextManager";
 import { MessageRepository } from "./MessageRepository";
 import { ChatPersistenceManager } from "./ChatPersistenceManager";
-import { ACTIVE_WEB_TAB_MARKER, USER_SENDER } from "@/constants";
+import { ACTIVE_WEB_TAB_MARKER, AI_SENDER, USER_SENDER } from "@/constants";
 import { TFile, Vault } from "obsidian";
 import { getWebViewerService } from "@/services/webViewerService/webViewerServiceSingleton";
 import {
@@ -832,5 +833,68 @@ export class ChatManager {
     await this.updateChainMemory();
 
     logInfo(`[ChatManager] Loaded ${messages.length} messages from chat history`);
+  }
+
+  /**
+   * Load a backend session's messages into the current chat.
+   *
+   * Fetches messages from the ContextHub companion plugin's session API
+   * and maps them to ChatMessage format for display in the copilot UI.
+   *
+   * @param sessionId - The backend session ID to load
+   * @returns true if messages were loaded successfully
+   */
+  async loadBackendSession(sessionId: string): Promise<boolean> {
+    try {
+      const ch = getContextHubPluginAPI();
+      if (!ch?.getSessionMessages) {
+        logWarn("[ChatManager] ContextHub plugin API or getSessionMessages not available");
+        return false;
+      }
+
+      const backendMessages = await ch.getSessionMessages(sessionId);
+      if (!backendMessages || backendMessages.length === 0) {
+        logInfo(`[ChatManager] No messages found for backend session ${sessionId}`);
+        return false;
+      }
+
+      // Clear current messages
+      this.clearMessages();
+
+      // Map backend messages to ChatMessage format and add to repository
+      const currentRepo = this.getCurrentMessageRepo();
+      for (const msg of backendMessages) {
+        // Skip system messages - they're internal context
+        if (msg.role === "system") continue;
+
+        const sender = msg.role === "user" ? USER_SENDER : AI_SENDER;
+        const timestamp = msg.created_at
+          ? {
+              epoch: new Date(msg.created_at).getTime(),
+              display: new Date(msg.created_at).toLocaleString(),
+              fileName: "",
+            }
+          : null;
+
+        const chatMessage: ChatMessage = {
+          message: msg.content,
+          sender,
+          timestamp,
+          isVisible: true,
+        };
+        currentRepo.addMessage(chatMessage);
+      }
+
+      // Update chain memory with loaded messages
+      await this.updateChainMemory();
+
+      logInfo(
+        `[ChatManager] Loaded ${backendMessages.length} messages from backend session ${sessionId}`
+      );
+      return true;
+    } catch (error) {
+      logWarn(`[ChatManager] Error loading backend session ${sessionId}:`, error);
+      return false;
+    }
   }
 }

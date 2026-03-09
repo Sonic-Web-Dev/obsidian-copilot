@@ -260,4 +260,15 @@ export class ChatUIState {
     await this.chatManager.loadChatHistory(file);
     this.notifyListeners();
   }
+
+  /**
+   * Load a backend session's messages into the current chat
+   */
+  async loadBackendSession(sessionId: string): Promise<boolean> {
+    const success = await this.chatManager.loadBackendSession(sessionId);
+    if (success) {
+      this.notifyListeners();
+    }
+    return success;
+  }
 }

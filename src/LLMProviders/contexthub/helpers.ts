@@ -21,6 +21,26 @@ export interface ContextHubPluginAPI {
   openCopilotChat?(options?: { missionId?: string; sessionId?: string }): void;
   /** Handle AG-UI template interaction from copilot chat */
   handleTemplateInteraction?(hintType: string, action: string, payload: any): void;
+  /** Get messages for a backend session */
+  getSessionMessages?(
+    sessionId: string,
+    options?: { limit?: number; offset?: number }
+  ): Promise<{ role: string; content: string; message_id?: number; created_at?: string }[]>;
+  /** List backend chat sessions */
+  listSessions?(options?: {
+    projectId?: string;
+    missionId?: string;
+    limit?: number;
+  }): Promise<
+    {
+      session_id: string;
+      title: string;
+      message_count?: number;
+      mtime: string | null;
+      project_id?: string;
+      mission_id?: string;
+    }[]
+  >;
 }
 
 // ---------------------------------------------------------------------------
