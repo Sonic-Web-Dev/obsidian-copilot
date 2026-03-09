@@ -27,11 +27,7 @@ export interface ContextHubPluginAPI {
     options?: { limit?: number; offset?: number }
   ): Promise<{ role: string; content: string; message_id?: number; created_at?: string }[]>;
   /** List backend chat sessions */
-  listSessions?(options?: {
-    projectId?: string;
-    missionId?: string;
-    limit?: number;
-  }): Promise<
+  listSessions?(options?: { projectId?: string; missionId?: string; limit?: number }): Promise<
     {
       session_id: string;
       title: string;
@@ -88,7 +84,7 @@ export function getContextHubBaseUrl(): string {
   } catch {
     // Companion plugin not available
   }
-  return "http://localhost:8000/v1";
+  return "https://ix8b43sg3j.execute-api.us-west-2.amazonaws.com/v1";
 }
 
 // ---------------------------------------------------------------------------
