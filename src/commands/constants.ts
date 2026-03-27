@@ -294,4 +294,13 @@ Return only the markdown content without any explanations or comments.`,
     modelKey: "",
     lastUsedMs: 0,
   },
+  {
+    title: "Create Mission Briefing",
+    content: `[BRIEFING_COMMAND]`,
+    showInContextMenu: false,
+    showInSlashMenu: true,
+    order: 1150,
+    modelKey: "",
+    lastUsedMs: 0,
+  },
 ];
