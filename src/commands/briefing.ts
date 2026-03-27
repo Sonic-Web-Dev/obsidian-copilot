@@ -48,18 +48,42 @@ export async function executeBriefingCommand(
   try {
     new Notice("Starting briefing session...", 3000);
 
-    // Get ContextHub API settings
-    const contexthubUrl = plugin.settings.contextHubApiUrl || "http://localhost:8000";
-    const workspace = plugin.settings.contextHubWorkspace || "dev";
-    const authToken = plugin.settings.contextHubAuthToken;
-
-    if (!authToken) {
-      new Notice("ContextHub auth token not configured. Check settings.", 5000);
+    // Get ContextHub API from companion plugin
+    const ch = (globalThis as any).app?.plugins?.plugins?.["contexthub"];
+    if (!ch || !ch.api) {
+      new Notice("ContextHub companion plugin not found. Install it first.", 5000);
       return null;
     }
 
-    // Get current project context (if in project view)
+    const endpoint = ch.api.getContextHubEndpoint?.();
+    if (!endpoint) {
+      new Notice("ContextHub endpoint not configured.", 5000);
+      return null;
+    }
+
+    const contexthubUrl = `${endpoint}/v1`;
+    const authToken = await ch.api.getIdToken?.();
+    const workspace = ch.api.getWorkspaceId?.() || "dev";
+
+    if (!authToken) {
+      new Notice("Not authenticated with ContextHub. Sign in first.", 5000);
+      return null;
+    }
+
+    // Get current project context (required for project storage)
     const projectId = await getCurrentProjectId(plugin);
+    if (!projectId) {
+      new Notice("No project context found. Open a project note first.", 5000);
+      return null;
+    }
+
+    // Generate brief name slug from request (first 3 words)
+    const briefName = userRequest
+      .toLowerCase()
+      .split(/\s+/)
+      .slice(0, 3)
+      .join("-")
+      .replace(/[^a-z0-9-]/g, "");
 
     // Call AgentCore briefing-assistant skill
     const briefingRequest: BriefingRequest = {
@@ -111,8 +135,8 @@ export async function executeBriefingCommand(
       10000
     );
 
-    // Save BRIEF.md to vault
-    await saveBriefToVault(plugin, briefingResult);
+    // Save BRIEF.md to project storage
+    await saveBriefToProject(plugin, briefingResult, projectId, briefName);
 
     return briefingResult;
   } catch (error) {
@@ -198,34 +222,88 @@ async function parseBriefingStream(response: Response): Promise<BriefingResponse
 }
 
 /**
- * Save BRIEF.md to vault
+ * Save BRIEF.md to project storage (ContextHub + Obsidian cache)
  */
-async function saveBriefToVault(plugin: CopilotPlugin, briefing: BriefingResponse): Promise<void> {
+async function saveBriefToProject(
+  plugin: CopilotPlugin,
+  briefing: BriefingResponse,
+  projectId: string,
+  briefName: string
+): Promise<void> {
+  const timestamp = new Date().toISOString().slice(0, 10); // 2026-03-28
+  const filename = `${timestamp}-${briefName}-brief.md`;
+  const storagePath = `docs/briefings/${filename}`;
+
   try {
-    // Create briefings folder if needed
-    const briefingsPath = "Briefings";
-    const folderExists = plugin.app.vault.getAbstractFileByPath(briefingsPath);
-    if (!folderExists) {
-      await plugin.app.vault.createFolder(briefingsPath);
+    // Get ContextHub API from companion plugin
+    const ch = (globalThis as any).app?.plugins?.plugins?.["contexthub"];
+    if (!ch || !ch.api) {
+      throw new Error("ContextHub companion plugin not available");
     }
 
-    // Generate filename
-    const timestamp = new Date().toISOString().slice(0, 16).replace(/:/g, "-");
-    const filename = `${briefingsPath}/BRIEF-${timestamp}.md`;
+    const endpoint = ch.api.getContextHubEndpoint?.();
+    if (!endpoint) {
+      throw new Error("ContextHub endpoint not configured");
+    }
 
-    // Save BRIEF.md
-    await plugin.app.vault.create(filename, briefing.content);
+    const contexthubUrl = `${endpoint}/v1`;
+    const authToken = await ch.api.getIdToken?.();
+    const workspace = ch.api.getWorkspaceId?.() || "dev";
 
-    new Notice(`Briefing saved: ${filename}`, 5000);
+    if (!authToken) {
+      throw new Error("Not authenticated with ContextHub");
+    }
 
-    // Open the brief
-    const file = plugin.app.vault.getAbstractFileByPath(filename);
+    // Save to ContextHub storage
+    const response = await fetch(`${contexthubUrl}/v1/storage/write`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+        "X-Workspace": workspace,
+      },
+      body: JSON.stringify({
+        project_id: projectId,
+        path: storagePath,
+        content: briefing.content,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Storage write failed: ${response.status} - ${errorText}`);
+    }
+
+    // Save to Obsidian vault cache
+    const vaultPath = `vault/contexthub-cache/${workspace}/project/${projectId}/${storagePath}`;
+    const folderPath = vaultPath.substring(0, vaultPath.lastIndexOf("/"));
+
+    // Create folders recursively
+    const folders = folderPath.split("/");
+    let currentPath = "";
+    for (const folder of folders) {
+      currentPath = currentPath ? `${currentPath}/${folder}` : folder;
+      const exists = plugin.app.vault.getAbstractFileByPath(currentPath);
+      if (!exists) {
+        await plugin.app.vault.createFolder(currentPath);
+      }
+    }
+
+    await plugin.app.vault.create(vaultPath, briefing.content);
+
+    new Notice(`Briefing saved: ${storagePath}`, 5000);
+
+    // Open the cached file
+    const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
     if (file) {
       await plugin.app.workspace.getLeaf().openFile(file as any);
     }
   } catch (error) {
     console.error("[Briefing] Failed to save:", error);
-    new Notice("Failed to save briefing to vault", 5000);
+    new Notice(
+      `Failed to save briefing: ${error instanceof Error ? error.message : "Unknown error"}`,
+      5000
+    );
   }
 }
 
