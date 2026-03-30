@@ -11,6 +11,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export interface ContextHubPluginAPI {
   isAuthenticated(): boolean;
   getContextHubEndpoint?(): string;
+  getStreamingEndpoint?(): string | null;
   getWorkspaceId?(): string;
   getActiveMissionId?(): string;
   getActiveProjectId?(): string;
@@ -77,6 +78,12 @@ export function isContextHubAuthenticated(): boolean {
 export function getContextHubBaseUrl(): string {
   try {
     const ch = getContextHubPluginAPI();
+    // Prefer streaming endpoint (Lambda Function URL, bypasses API Gateway 30s timeout)
+    if (ch?.getStreamingEndpoint) {
+      const streamingEndpoint = ch.getStreamingEndpoint();
+      if (streamingEndpoint) return `${streamingEndpoint}v1`;
+    }
+    // Fallback to regular API endpoint
     if (ch?.getContextHubEndpoint) {
       const endpoint = ch.getContextHubEndpoint();
       if (endpoint) return `${endpoint}/v1`;
