@@ -1,7 +1,7 @@
 {
   "id": "contexthub-copilot",
   "name": "ContextHub Copilot",
-  "version": "3.2.5",
+  "version": "3.2.6",
   "minAppVersion": "0.15.0",
   "description": "AI chat for Obsidian with ContextHub Brain integration. Based on obsidian-copilot by Logan Yang.",
   "author": "ContextHub (based on obsidian-copilot by Logan Yang)",
