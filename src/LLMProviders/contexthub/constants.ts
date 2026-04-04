@@ -56,8 +56,8 @@ export const CONTEXTHUB_BUILTIN_MODELS: CustomModel[] = [
 
 export const CONTEXTHUB_PROVIDER_INFO: ProviderMetadata = {
   label: "ContextHub",
-  host: "https://ix8b43sg3j.execute-api.us-west-2.amazonaws.com/v1",
-  curlBaseURL: "https://ix8b43sg3j.execute-api.us-west-2.amazonaws.com/v1",
+  host: "https://dev-api.contexthub.md/v1",
+  curlBaseURL: "https://dev-api.contexthub.md/v1",
   keyManagementURL: "",
   listModelURL: "",
   testModel: ChatModels.CONTEXTHUB_SONNET,

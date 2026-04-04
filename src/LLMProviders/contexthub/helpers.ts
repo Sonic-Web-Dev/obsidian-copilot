@@ -91,7 +91,7 @@ export function getContextHubBaseUrl(): string {
   } catch {
     // Companion plugin not available
   }
-  return "https://ix8b43sg3j.execute-api.us-west-2.amazonaws.com/v1";
+  return "https://dev-api.contexthub.md/v1";
 }
 
 // ---------------------------------------------------------------------------
