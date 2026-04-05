@@ -1,0 +1,16 @@
+[identity]
+name = "contexthub-copilot"
+
+[scope.copilot]
+path = "src"
+tags = ["frontend", "obsidian-plugin", "typescript", "llm"]
+
+[scope.tests]
+path = "tests"
+tags = ["testing", "typescript"]
+
+[deps.clients-ts]
+name = "contexthub-brain"
+
+[cross_repo]
+package_map = { "@contexthub/client" = "clients-ts" }
