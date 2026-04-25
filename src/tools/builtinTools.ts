@@ -2,6 +2,7 @@ import { getSettings } from "@/settings/model";
 import { Vault } from "obsidian";
 import { replaceInFileTool, writeToFileTool } from "./ComposerTools";
 import { createGetFileTreeTool } from "./FileTreeTools";
+import { resolveHitlMemoTool } from "./HitlTools";
 import { updateMemoryTool } from "./memoryTools";
 import { readNoteTool } from "./NoteTools";
 import { localSearchTool, webSearchTool } from "./SearchTools";
@@ -228,6 +229,23 @@ diff: "------- SEARCH\\n## Attendees\\n- John Smith\\n- Jane Doe\\n=======\\n## 
       customPromptInstructions: `For youtubeTranscription:
 - Use when user provides YouTube URLs
 - No parameters needed - the tool will process URLs from the conversation`,
+    },
+  },
+
+  // HITL tools
+  {
+    tool: resolveHitlMemoTool,
+    metadata: {
+      id: "resolveHitlMemo",
+      displayName: "Resolve Review",
+      description: "Approve or reject a plan review memo",
+      category: "custom",
+      isAlwaysEnabled: true,
+      customPromptInstructions: `For resolveHitlMemo:
+- Use when the user decides to approve or reject a plan during a review discussion
+- The memo_id is provided in the review context at the start of the conversation
+- action must be "approve" or "reject"
+- Include feedback when rejecting to guide the next plan generation`,
     },
   },
 ];

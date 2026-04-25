@@ -235,13 +235,14 @@ export default class CopilotPlugin extends Plugin {
           projectId?: string;
           projectName?: string;
           target?: "new" | "current" | "sidebar";
+          memoContext?: { memoId: string; content: string; metadata?: Record<string, unknown> };
         }) => {
           const target = data?.target ?? "sidebar";
 
           if (target === "new") {
             // Create a new session in a split pane (does NOT clear existing)
             const session = this.sessionRegistry.createSession({
-              title: data?.missionName ?? "Chat",
+              title: data?.memoContext ? "Plan Review" : (data?.missionName ?? "Chat"),
             });
 
             if (data?.missionId || data?.sessionId || data?.projectId) {
@@ -256,6 +257,26 @@ export default class CopilotPlugin extends Plugin {
             }
 
             setChainType(ChainType.CONTEXTHUB_CHAIN);
+
+            // Pre-load memo review context as initial messages
+            if (data?.memoContext) {
+              const { memoId, content, metadata } = data.memoContext;
+              const scorecard = metadata?.quality_scorecard as Record<string, number> | undefined;
+
+              let contextMsg = content || "A plan requires your review.";
+              if (scorecard) {
+                contextMsg += `\n\n**Memo ID:** \`${memoId}\``;
+                contextMsg += "\n\nYou can approve this plan or reject it with feedback.";
+                contextMsg += " I can explain any dimension in detail -- just ask.";
+              }
+
+              session.chatManager.addMessage({
+                message: contextMsg,
+                sender: "ai",
+                timestamp: null,
+                isVisible: true,
+              });
+            }
 
             const leaf = this.app.workspace.getLeaf("split");
             await leaf.setViewState({
