@@ -3,6 +3,7 @@ import Chat from "@/components/Chat";
 import { CHAT_VIEWTYPE } from "@/constants";
 import { AppContext, EventTargetContext } from "@/context";
 import CopilotPlugin from "@/main";
+import type { SessionState } from "@/state/SessionState";
 import { FileParserManager } from "@/tools/FileParserManager";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { ItemView, Platform, WorkspaceLeaf } from "obsidian";
@@ -20,6 +21,7 @@ export default class CopilotView extends ItemView {
   private keyboardObserver: MutationObserver | null = null;
   private lastDrawerEl: HTMLElement | null = null;
   eventTarget: EventTarget;
+  private boundSessionId: string | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -32,8 +34,41 @@ export default class CopilotView extends ItemView {
     this.plugin = plugin;
   }
 
+  private get leafId(): string {
+    return (this.leaf as any).id as string;
+  }
+
+  getSession(): SessionState | null {
+    if (this.boundSessionId) {
+      return this.plugin.sessionRegistry.getSessionById(this.boundSessionId);
+    }
+    return (
+      this.plugin.sessionRegistry.getSessionForLeaf(this.leafId) ??
+      this.plugin.sessionRegistry.getPrimarySession()
+    );
+  }
+
+  bindSession(sessionId: string): void {
+    this.boundSessionId = sessionId;
+    this.plugin.sessionRegistry.bindLeaf(sessionId, this.leafId);
+  }
+
   getViewType(): string {
     return CHAT_VIEWTYPE;
+  }
+
+  getState(): Record<string, unknown> {
+    return { sessionId: this.boundSessionId };
+  }
+
+  async setState(state: Record<string, unknown>, result: any): Promise<void> {
+    if (typeof state.sessionId === "string") {
+      const session = this.plugin.sessionRegistry.getSessionById(state.sessionId);
+      if (session) {
+        this.bindSession(state.sessionId);
+      }
+    }
+    await super.setState(state, result);
   }
 
   // Return an icon for this view
@@ -51,6 +86,14 @@ export default class CopilotView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    // Bind to primary session if no session was assigned before opening
+    if (!this.boundSessionId) {
+      const primary = this.plugin.sessionRegistry.getPrimarySession();
+      if (primary) {
+        this.bindSession(primary.sessionId);
+      }
+    }
+
     this.root = createRoot(this.containerEl.children[1]);
     const handleSaveAsNote = (saveFunction: () => Promise<void>) => {
       this.handleSaveAsNote = saveFunction;
@@ -124,7 +167,7 @@ export default class CopilotView extends ItemView {
               fileParserManager={this.fileParserManager}
               plugin={this.plugin}
               onSaveChat={handleSaveAsNote}
-              chatUIState={this.plugin.chatUIState}
+              chatUIState={this.getSession()?.chatUIState ?? this.plugin.chatUIState}
             />
           </Tooltip.Provider>
         </EventTargetContext.Provider>
@@ -154,11 +197,17 @@ export default class CopilotView extends ItemView {
   async onClose(): Promise<void> {
     this.keyboardObserver?.disconnect();
     this.keyboardObserver = null;
-    // Reason: Clean up the class on the tracked drawer element when the view is closed.
-    // Use lastDrawerEl instead of querying closest(), because the view may have already
-    // been detached from the drawer DOM by the time onClose fires.
     this.lastDrawerEl?.classList.remove("copilot-keyboard-open");
     this.lastDrawerEl = null;
+
+    // Destroy non-primary sessions when their view closes
+    if (this.boundSessionId) {
+      const session = this.plugin.sessionRegistry.getSessionById(this.boundSessionId);
+      if (session && !session.descriptor.isPrimary) {
+        this.plugin.sessionRegistry.destroySession(this.boundSessionId);
+      }
+    }
+    this.boundSessionId = null;
 
     if (this.root) {
       this.root.unmount();

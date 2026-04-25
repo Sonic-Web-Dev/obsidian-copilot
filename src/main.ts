@@ -234,32 +234,62 @@ export default class CopilotPlugin extends Plugin {
           missionName?: string;
           projectId?: string;
           projectName?: string;
+          target?: "new" | "current" | "sidebar";
         }) => {
-          // Clear previous chat before starting new session
-          await this.handleNewChat();
+          const target = data?.target ?? "sidebar";
 
-          // Store context in atom for the entire chat session
-          if (data?.missionId || data?.sessionId || data?.projectId) {
-            const ch = getContextHubPluginAPI();
-            setMissionContext({
-              missionId: data.missionId ?? "",
-              sessionId: data.sessionId || crypto.randomUUID(),
-              projectId: data.projectId ?? ch?.getActiveProjectId?.() ?? undefined,
-              missionName: data.missionName,
-              projectName: data.projectName,
+          if (target === "new") {
+            // Create a new session in a split pane (does NOT clear existing)
+            const session = this.sessionRegistry.createSession({
+              title: data?.missionName ?? "Chat",
             });
+
+            if (data?.missionId || data?.sessionId || data?.projectId) {
+              const ch = getContextHubPluginAPI();
+              setMissionContext({
+                missionId: data.missionId ?? "",
+                sessionId: data.sessionId || crypto.randomUUID(),
+                projectId: data.projectId ?? ch?.getActiveProjectId?.() ?? undefined,
+                missionName: data.missionName,
+                projectName: data.projectName,
+              });
+            }
+
+            setChainType(ChainType.CONTEXTHUB_CHAIN);
+
+            const leaf = this.app.workspace.getLeaf("split");
+            await leaf.setViewState({
+              type: CHAT_VIEWTYPE,
+              active: true,
+              state: { sessionId: session.sessionId },
+            });
+
+            if (data?.sessionId) {
+              await session.chatUIState.loadBackendSession(data.sessionId);
+            }
+          } else {
+            // "sidebar" or "current" -- use primary session (backward compatible)
+            await this.handleNewChat();
+
+            if (data?.missionId || data?.sessionId || data?.projectId) {
+              const ch = getContextHubPluginAPI();
+              setMissionContext({
+                missionId: data.missionId ?? "",
+                sessionId: data.sessionId || crypto.randomUUID(),
+                projectId: data.projectId ?? ch?.getActiveProjectId?.() ?? undefined,
+                missionName: data.missionName,
+                projectName: data.projectName,
+              });
+            }
+
+            setChainType(ChainType.CONTEXTHUB_CHAIN);
+
+            if (data?.sessionId) {
+              await this.chatUIState.loadBackendSession(data.sessionId);
+            }
+
+            this.activateView();
           }
-
-          // Switch chain type to ContextHub
-          setChainType(ChainType.CONTEXTHUB_CHAIN);
-
-          // Load backend session messages if a sessionId was provided
-          if (data?.sessionId) {
-            await this.chatUIState.loadBackendSession(data.sessionId);
-          }
-
-          // Open/focus the copilot view
-          this.activateView();
         }
       )
     );
