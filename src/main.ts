@@ -25,8 +25,6 @@ import { migrateCommands, suggestDefaultCommands } from "@/commands/migrator";
 import { migrateSystemPromptsFromSettings } from "@/system-prompts/migration";
 import { SystemPromptRegister } from "@/system-prompts/systemPromptRegister";
 import { ABORT_REASON, CHAT_VIEWTYPE, DEFAULT_OPEN_AREA, EVENT_NAMES } from "@/constants";
-import { ChatManager } from "@/core/ChatManager";
-import { MessageRepository } from "@/core/MessageRepository";
 import { encryptAllKeys } from "@/encryptionService";
 import { logInfo, logWarn } from "@/logger";
 import { logFileManager } from "@/logFileManager";
@@ -48,6 +46,7 @@ import {
   subscribeToSettingsChange,
 } from "@/settings/model";
 import { ChatUIState } from "@/state/ChatUIState";
+import { SessionRegistry } from "@/state/SessionRegistry";
 import { VaultDataManager } from "@/state/vaultDataAtoms";
 import { FileParserManager } from "@/tools/FileParserManager";
 import { initializeBuiltinTools } from "@/tools/builtinTools";
@@ -89,7 +88,14 @@ export default class CopilotPlugin extends Plugin {
   customCommandRegister: CustomCommandRegister;
   systemPromptRegister: SystemPromptRegister;
   settingsUnsubscriber?: () => void;
-  chatUIState: ChatUIState;
+  sessionRegistry: SessionRegistry;
+  private _chatUIState: ChatUIState | null = null;
+  get chatUIState(): ChatUIState {
+    return this._chatUIState ?? this.sessionRegistry.getPrimarySession()!.chatUIState;
+  }
+  set chatUIState(value: ChatUIState) {
+    this._chatUIState = value;
+  }
   userMemoryManager: UserMemoryManager;
   quickAskController: QuickAskController;
   chatSelectionHighlightController: ChatSelectionHighlightController;
@@ -147,11 +153,10 @@ export default class CopilotPlugin extends Plugin {
     // Initialize FileParserManager early with other core services
     this.fileParserManager = new FileParserManager(this.brevilabsClient, this.app.vault);
 
-    // Initialize ChatUIState with new architecture
-    const messageRepo = new MessageRepository();
+    // Initialize SessionRegistry with primary session
     const chainManager = this.projectManager.getCurrentChainManager();
-    const chatManager = new ChatManager(messageRepo, chainManager, this.fileParserManager, this);
-    this.chatUIState = new ChatUIState(chatManager);
+    this.sessionRegistry = new SessionRegistry(chainManager, this.fileParserManager, this);
+    this.sessionRegistry.createSession({ isPrimary: true });
 
     // Initialize UserMemoryManager
     this.userMemoryManager = new UserMemoryManager(this.app);
