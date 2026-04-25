@@ -66,6 +66,7 @@ export default class CopilotView extends ItemView {
       const session = this.plugin.sessionRegistry.getSessionById(state.sessionId);
       if (session) {
         this.bindSession(state.sessionId);
+        this.updateView();
       }
     }
     await super.setState(state, result);
