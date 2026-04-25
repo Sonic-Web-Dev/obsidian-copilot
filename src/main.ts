@@ -76,7 +76,57 @@ import {
 import { RecentUsageManager } from "@/utils/recentUsageManager";
 import { v4 as uuidv4 } from "uuid";
 
-// Removed unused FileTrackingState interface
+const DIMENSION_NAMES: Record<string, string> = {
+  spec_completeness: "Spec completeness",
+  component_spec_coverage: "Component coverage",
+  decision_coverage: "Decision coverage",
+  research_coverage: "Research coverage",
+  phase_alignment: "Phase alignment",
+  fact_check_pass_rate: "Fact-check pass rate",
+  exit_criteria_coverage: "Exit criteria",
+  rollback_coverage: "Rollback coverage",
+  mission_context: "Mission context",
+  acceptance_criteria_coverage: "Acceptance criteria",
+  guardrails_coverage: "Guardrails",
+  verification_coverage: "Verification",
+};
+
+function buildReviewStarterMessage(scorecard?: Record<string, number>): string {
+  if (!scorecard) {
+    return "A plan requires your review before it can be finalized.\n\nWould you like to **approve** it or **reject** it with feedback?";
+  }
+
+  const overall = Math.round((scorecard.overall ?? 0) * 100);
+  const weak: string[] = [];
+  const strong: string[] = [];
+
+  for (const [key, label] of Object.entries(DIMENSION_NAMES)) {
+    const val = scorecard[key];
+    if (val == null) continue;
+    const pct = Math.round(val * 100);
+    if (pct < 75) {
+      weak.push(`- **${label}**: ${pct}%`);
+    } else {
+      strong.push(`- **${label}**: ${pct}%`);
+    }
+  }
+
+  let msg = `I've reviewed the plan and it scored **${overall}%** overall, which is below the 75% auto-approval threshold.\n\n`;
+
+  if (weak.length > 0) {
+    msg += `### Areas that need attention\n${weak.join("\n")}\n\n`;
+  }
+  if (strong.length > 0) {
+    msg += `### Areas that passed\n${strong.join("\n")}\n\n`;
+  }
+
+  msg += "### What would you like to do?\n";
+  msg += "- **Approve** -- accept the plan as-is and proceed to execution\n";
+  msg += "- **Reject** -- send it back for regeneration (I'll include your feedback)\n";
+  msg += "- **Ask me** about any specific dimension and I'll explain what's behind the score\n";
+
+  return msg;
+}
 
 export default class CopilotPlugin extends Plugin {
   // Plugin components
@@ -261,16 +311,10 @@ export default class CopilotPlugin extends Plugin {
             applyContext();
 
             if (data?.memoContext) {
-              const { memoId, content, metadata } = data.memoContext;
+              const { metadata } = data.memoContext;
               const scorecard = metadata?.quality_scorecard as Record<string, number> | undefined;
 
-              let contextMsg = content || "A plan requires your review.";
-              if (scorecard) {
-                contextMsg += `\n\n**Memo ID:** \`${memoId}\``;
-                contextMsg += "\n\nYou can approve this plan or reject it with feedback.";
-                contextMsg += " I can explain any dimension in detail -- just ask.";
-              }
-
+              const contextMsg = buildReviewStarterMessage(scorecard);
               session.chatManager.addMessage({
                 message: contextMsg,
                 sender: "ai",
