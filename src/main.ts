@@ -237,14 +237,7 @@ export default class CopilotPlugin extends Plugin {
           target?: "new" | "current" | "sidebar";
           memoContext?: { memoId: string; content: string; metadata?: Record<string, unknown> };
         }) => {
-          const target = data?.target ?? "sidebar";
-
-          if (target === "new") {
-            // Create a new session in a split pane (does NOT clear existing)
-            const session = this.sessionRegistry.createSession({
-              title: data?.memoContext ? "Plan Review" : (data?.missionName ?? "Chat"),
-            });
-
+          const applyContext = () => {
             if (data?.missionId || data?.sessionId || data?.projectId) {
               const ch = getContextHubPluginAPI();
               setMissionContext({
@@ -255,10 +248,18 @@ export default class CopilotPlugin extends Plugin {
                 projectName: data.projectName,
               });
             }
-
             setChainType(ChainType.CONTEXTHUB_CHAIN);
+          };
 
-            // Pre-load memo review context as initial messages
+          const target = data?.target ?? "sidebar";
+
+          if (target === "new") {
+            const session = this.sessionRegistry.createSession({
+              title: data?.memoContext ? "Plan Review" : (data?.missionName ?? "Chat"),
+            });
+
+            applyContext();
+
             if (data?.memoContext) {
               const { memoId, content, metadata } = data.memoContext;
               const scorecard = metadata?.quality_scorecard as Record<string, number> | undefined;
@@ -289,21 +290,8 @@ export default class CopilotPlugin extends Plugin {
               await session.chatUIState.loadBackendSession(data.sessionId);
             }
           } else {
-            // "sidebar" or "current" -- use primary session (backward compatible)
             await this.handleNewChat();
-
-            if (data?.missionId || data?.sessionId || data?.projectId) {
-              const ch = getContextHubPluginAPI();
-              setMissionContext({
-                missionId: data.missionId ?? "",
-                sessionId: data.sessionId || crypto.randomUUID(),
-                projectId: data.projectId ?? ch?.getActiveProjectId?.() ?? undefined,
-                missionName: data.missionName,
-                projectName: data.projectName,
-              });
-            }
-
-            setChainType(ChainType.CONTEXTHUB_CHAIN);
+            applyContext();
 
             if (data?.sessionId) {
               await this.chatUIState.loadBackendSession(data.sessionId);

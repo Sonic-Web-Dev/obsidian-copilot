@@ -1,10 +1,11 @@
+import { ChainType } from "@/chainFactory";
 import type ChainManager from "@/LLMProviders/chainManager";
 import type { FileParserManager } from "@/tools/FileParserManager";
 import type CopilotPlugin from "@/main";
 import { ChatManager } from "@/core/ChatManager";
 import { MessageRepository } from "@/core/MessageRepository";
 import { ChatUIState } from "@/state/ChatUIState";
-import { type SessionDescriptor, createSessionId } from "./SessionDescriptor";
+import type { SessionDescriptor } from "./SessionDescriptor";
 
 export interface SessionStateOpts {
   isPrimary?: boolean;
@@ -25,7 +26,7 @@ export class SessionState {
     plugin: CopilotPlugin,
     opts: SessionStateOpts = {}
   ) {
-    this.sessionId = opts.sessionId ?? createSessionId();
+    this.sessionId = opts.sessionId ?? crypto.randomUUID();
     this.messageRepo = new MessageRepository();
     this.chatManager = new ChatManager(this.messageRepo, chainManager, fileParserManager, plugin);
     this.chatUIState = new ChatUIState(this.chatManager);
@@ -35,7 +36,7 @@ export class SessionState {
       leafId: null,
       isPrimary: opts.isPrimary ?? false,
       missionContext: null,
-      chainType: "llm_chain" as any,
+      chainType: ChainType.LLM_CHAIN,
       modelKey: "",
       title: opts.title,
       createdAt: Date.now(),

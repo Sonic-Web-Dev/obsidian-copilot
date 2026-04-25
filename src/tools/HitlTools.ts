@@ -13,22 +13,20 @@ const resolveHitlMemoSchema = z.object({
 export const resolveHitlMemoTool = createLangChainTool({
   name: "resolveHitlMemo",
   description:
-    "Resolve a human-in-the-loop review memo by approving or rejecting it. " +
-    "Use this when the user has decided to approve or reject a plan after reviewing the quality scorecard.",
+    "Resolve a human-in-the-loop review memo. " +
+    "Actions: approve (quality gate pass), approve_as_is (override fact-check issues), " +
+    "reject (send back for regeneration), acknowledge (informational gate only).",
   schema: resolveHitlMemoSchema,
   func: async ({ memo_id, action, feedback }) => {
     const ch = getContextHubPluginAPI();
-    if (!ch) {
-      return JSON.stringify({ error: "ContextHub not available" });
+    if (!ch?.resolveMemoFromChat) {
+      return JSON.stringify({
+        error: "ContextHub not available or resolveMemoFromChat not supported",
+      });
     }
 
     try {
-      const client = (ch as any).contextHubService?.getClient();
-      if (!client) {
-        return JSON.stringify({ error: "ContextHub client not available" });
-      }
-
-      const result = await client.resolveMemoFromChat(memo_id, action, feedback);
+      const result = await ch.resolveMemoFromChat(memo_id, action, feedback);
       const messages: Record<string, string> = {
         approve: "Plan approved. The pipeline will continue with the storage phase.",
         approve_as_is: "Plan approved despite fact-check issues. Override recorded.",

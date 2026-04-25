@@ -94,8 +94,4 @@ export class SessionRegistry {
   get size(): number {
     return this.sessions.size;
   }
-
-  updateChainManager(chainManager: ChainManager): void {
-    this.chainManager = chainManager;
-  }
 }

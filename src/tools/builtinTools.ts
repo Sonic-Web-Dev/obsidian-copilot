@@ -242,9 +242,9 @@ diff: "------- SEARCH\\n## Attendees\\n- John Smith\\n- Jane Doe\\n=======\\n## 
       category: "custom",
       isAlwaysEnabled: true,
       customPromptInstructions: `For resolveHitlMemo:
-- Use when the user decides to approve or reject a plan during a review discussion
+- Use when the user decides on a plan review action during a discussion
 - The memo_id is provided in the review context at the start of the conversation
-- action must be "approve" or "reject"
+- Actions: "approve" (quality gate pass), "approve_as_is" (override fact-check), "reject" (regenerate), "acknowledge" (informational)
 - Include feedback when rejecting to guide the next plan generation`,
     },
   },

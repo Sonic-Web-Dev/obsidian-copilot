@@ -27,6 +27,8 @@ export interface ContextHubPluginAPI {
     sessionId: string,
     options?: { limit?: number; offset?: number }
   ): Promise<{ role: string; content: string; message_id?: number; created_at?: string }[]>;
+  /** Resolve an HITL memo from a chat session */
+  resolveMemoFromChat?(memoId: string, action: string, feedback?: string): Promise<any>;
   /** List backend chat sessions */
   listSessions?(options?: { projectId?: string; missionId?: string; limit?: number }): Promise<
     {

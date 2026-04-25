@@ -11,7 +11,3 @@ export interface SessionDescriptor {
   title?: string;
   createdAt: number;
 }
-
-export function createSessionId(): string {
-  return crypto.randomUUID();
-}
