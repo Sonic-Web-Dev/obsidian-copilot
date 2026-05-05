@@ -302,6 +302,20 @@ export class ContextHubChatModel extends BaseChatModel {
 
       try {
         const chunk = JSON.parse(data) as ContextHubStreamChunk;
+        // Debug: log raw AG-UI events to trace tool call data flow
+        const rawType = (chunk as any).type;
+        if (rawType && ["TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END"].includes(rawType)) {
+          console.log(
+            `[ContextHub SSE] Raw AG-UI event: ${rawType}`,
+            JSON.stringify(chunk).slice(0, 500)
+          );
+        }
+        if (chunk.x_agui) {
+          console.log(
+            `[ContextHub SSE] x_agui event: ${chunk.x_agui.type}`,
+            JSON.stringify(chunk.x_agui).slice(0, 500)
+          );
+        }
         chunkQueue.push(chunk);
       } catch {
         // Skip invalid JSON

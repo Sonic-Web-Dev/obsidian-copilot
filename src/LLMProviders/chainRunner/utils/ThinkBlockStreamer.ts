@@ -226,7 +226,8 @@ export class ThinkBlockStreamer {
       case "TOOL_CALL_START": {
         const name = ((event.toolCallName || event.name) as string) || "agent_tool";
         const displayName = name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-        this.aguiToolCalls.set(toolCallId, { name, args: "" });
+        const toolInput = (event.toolInput as string) || "";
+        this.aguiToolCalls.set(toolCallId, { name, args: toolInput });
         // Embed executing marker (will be updated on TOOL_CALL_END)
         this.fullResponse += createToolCallMarker(
           toolCallId,
@@ -308,6 +309,12 @@ export class ThinkBlockStreamer {
     // Handle AG-UI events forwarded via x_agui extension field
     const aguiEvent = chunk.response_metadata?.x_agui as AGUIEvent | undefined;
     if (aguiEvent) {
+      console.log(`[ThinkBlockStreamer] AG-UI event: ${aguiEvent.type}`, {
+        toolCallId: aguiEvent.toolCallId,
+        hasArgs: !!(aguiEvent.args || aguiEvent.delta),
+        hasResult: !!aguiEvent.result,
+        keys: Object.keys(aguiEvent),
+      });
       this.handleAGUIEvent(aguiEvent);
     }
 
