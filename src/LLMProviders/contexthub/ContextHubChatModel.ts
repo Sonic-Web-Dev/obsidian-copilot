@@ -390,6 +390,22 @@ export class ContextHubChatModel extends BaseChatModel {
    * Returns null if the chunk has no usable content or metadata.
    */
   private processStreamChunk(chunk: ContextHubStreamChunk): ChatGenerationChunk | null {
+    // Handle raw AG-UI events that arrive without OpenAI wrapper (direct from brain)
+    const rawType = (chunk as unknown as Record<string, unknown>).type as string | undefined;
+    if (rawType && !chunk.choices && !chunk.x_agui) {
+      const aguiTypes = [
+        "TOOL_CALL_START",
+        "TOOL_CALL_ARGS",
+        "TOOL_CALL_END",
+        "STATE_DELTA",
+        "STATE_SNAPSHOT",
+        "CUSTOM",
+      ];
+      if (aguiTypes.includes(rawType)) {
+        (chunk as ContextHubStreamChunk).x_agui = chunk as unknown as AGUIEvent;
+      }
+    }
+
     const choice = chunk.choices?.[0];
     let content = choice?.delta?.content || "";
 
