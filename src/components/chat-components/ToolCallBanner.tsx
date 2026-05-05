@@ -204,7 +204,7 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
               </>
             )}
 
-            {canExpand && (
+            {(canExpand || actuallyExecuting) && (
               <ChevronRight
                 className={cn(
                   "tw-size-4 tw-text-muted tw-transition-transform",
