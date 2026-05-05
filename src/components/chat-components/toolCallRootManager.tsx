@@ -272,6 +272,7 @@ export const renderToolCallBanner = (
       emoji={toolCall.emoji}
       isExecuting={toolCall.isExecuting}
       result={toolCall.result || null}
+      args={toolCall.args || null}
       confirmationMessage={toolCall.confirmationMessage}
     />
   );

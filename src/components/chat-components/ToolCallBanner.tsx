@@ -40,6 +40,7 @@ interface ToolCallBannerProps {
   emoji: string;
   isExecuting: boolean;
   result: string | null;
+  args?: string | null;
   confirmationMessage?: string | null;
   onAccept?: () => void;
   onReject?: () => void;
@@ -85,12 +86,22 @@ const formatToolResult = (toolName: string, result: string | null): string | nul
   }
 };
 
+const formatArgs = (args: string): string => {
+  try {
+    const parsed = JSON.parse(args);
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return args;
+  }
+};
+
 export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
   toolName,
   displayName,
   emoji,
   isExecuting,
   result,
+  args,
   confirmationMessage,
   onAccept,
   onReject,
@@ -98,13 +109,14 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const formattedResult = useMemo(() => formatToolResult(toolName, result), [toolName, result]);
+  const formattedArgs = useMemo(() => (args ? formatArgs(args) : null), [args]);
 
   // Defensive check: If we have a result, the tool is definitely done executing
   // This prevents infinite rolling animation if marker update fails or is delayed
   const actuallyExecuting = isExecuting && !result;
 
-  // Don't allow expanding while executing
-  const canExpand = !actuallyExecuting && formattedResult !== null;
+  // Always allow expanding completed tool calls
+  const canExpand = !actuallyExecuting;
 
   return (
     <Collapsible
@@ -112,7 +124,7 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
       onOpenChange={setIsOpen}
       disabled={!canExpand}
       aria-disabled={!canExpand}
-      className="tw-my-3 tw-w-full sm:tw-max-w-sm"
+      className="tw-my-3 tw-w-full"
     >
       <div
         className={cn(
@@ -157,7 +169,16 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
           </div>
 
           <div className="tw-flex tw-items-center tw-gap-2">
-            {/* Future: Accept/Reject buttons */}
+            {/* Token estimates (chars/4) shown when completed */}
+            {!actuallyExecuting && (args || result) && (
+              <span className="tw-font-mono tw-text-[10px] tw-text-muted tw-opacity-70">
+                {args ? `${Math.ceil(args.length / 4)}` : "0"}
+                {" / "}
+                {result ? `${Math.ceil(result.length / 4)}` : "0"}
+                {" tok"}
+              </span>
+            )}
+
             {!actuallyExecuting && onAccept && onReject && (
               <>
                 <button
@@ -195,12 +216,28 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="tw-border-t tw-border-border tw-px-3 tw-py-2.5 sm:tw-px-4 sm:tw-py-3">
-            <div className="tw-text-sm tw-text-muted">
-              <pre className="tw-overflow-x-auto tw-whitespace-pre-wrap tw-font-mono tw-text-xs">
-                {formattedResult ?? "No result available"}
-              </pre>
-            </div>
+          <div className="tw-space-y-2 tw-border-t tw-border-border tw-px-3 tw-py-2.5 sm:tw-px-4 sm:tw-py-3">
+            {formattedArgs && (
+              <div>
+                <div className="tw-mb-1 tw-text-xs tw-font-medium tw-text-muted">Request</div>
+                <pre className="tw-max-h-48 tw-overflow-auto tw-whitespace-pre-wrap tw-rounded tw-bg-secondary tw-p-2 tw-font-mono tw-text-xs">
+                  {formattedArgs}
+                </pre>
+              </div>
+            )}
+            {formattedResult && (
+              <div>
+                <div className="tw-mb-1 tw-text-xs tw-font-medium tw-text-muted">Response</div>
+                <pre className="tw-max-h-64 tw-overflow-auto tw-whitespace-pre-wrap tw-rounded tw-bg-secondary tw-p-2 tw-font-mono tw-text-xs">
+                  {formattedResult}
+                </pre>
+              </div>
+            )}
+            {!formattedArgs && !formattedResult && (
+              <div className="tw-text-xs tw-italic tw-text-muted">
+                Tool completed (result streamed as text below)
+              </div>
+            )}
           </div>
         </CollapsibleContent>
       </div>

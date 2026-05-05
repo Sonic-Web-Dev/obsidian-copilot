@@ -8,7 +8,7 @@ import {
   buildToolCallsFromChunks,
   createAIMessageWithToolCalls,
 } from "./nativeToolCalling";
-import { createToolCallMarker, updateToolCallMarker } from "./toolCallParser";
+import { createToolCallMarker } from "./toolCallParser";
 import { logInfo, logWarn } from "@/logger";
 import type { AGUIEvent } from "@/LLMProviders/contexthub/ContextHubChatModel";
 
@@ -251,10 +251,28 @@ export class ThinkBlockStreamer {
         const existing = this.aguiToolCalls.get(toolCallId);
         if (existing) {
           const result =
-            typeof event.result === "string"
-              ? event.result
-              : JSON.stringify(event.result ?? existing.args ?? "");
-          this.fullResponse = updateToolCallMarker(this.fullResponse, toolCallId, result);
+            typeof event.result === "string" ? event.result : JSON.stringify(event.result ?? "");
+          const displayName = existing.name
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+
+          // Replace executing marker with completed marker that includes args
+          const escapedId = toolCallId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const regex = new RegExp(
+            `<!--TOOL_CALL_START:${escapedId}:[^:]+:[^:]+:[^:]+:[^:]*:[^:]+-->[\\s\\S]*?<!--TOOL_CALL_END:${escapedId}:[\\s\\S]*?-->`,
+            "g"
+          );
+          const newMarker = createToolCallMarker(
+            toolCallId,
+            existing.name,
+            displayName,
+            existing.name,
+            "",
+            false,
+            existing.args,
+            result
+          );
+          this.fullResponse = this.fullResponse.replace(regex, newMarker);
           this.aguiToolCalls.delete(toolCallId);
         }
         break;
@@ -379,6 +397,32 @@ export class ThinkBlockStreamer {
 
     // Final check for text-level think tags (in case stream ended before </think> was seen)
     this.handleTextLevelThinkTags();
+
+    // Finalize any tool calls that never received TOOL_CALL_END
+    if (this.aguiToolCalls.size > 0) {
+      for (const [toolCallId, existing] of this.aguiToolCalls) {
+        const displayName = existing.name
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        const escapedId = toolCallId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(
+          `<!--TOOL_CALL_START:${escapedId}:[^:]+:[^:]+:[^:]+:[^:]*:[^:]+-->[\\s\\S]*?<!--TOOL_CALL_END:${escapedId}:[\\s\\S]*?-->`,
+          "g"
+        );
+        const newMarker = createToolCallMarker(
+          toolCallId,
+          existing.name,
+          displayName,
+          existing.name,
+          "",
+          false,
+          existing.args,
+          ""
+        );
+        this.fullResponse = this.fullResponse.replace(regex, newMarker);
+      }
+      this.aguiToolCalls.clear();
+    }
 
     if (this.errorResponse) {
       this.fullResponse += this.errorResponse;

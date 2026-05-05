@@ -6,6 +6,7 @@ export interface ToolCallMarker {
   confirmationMessage?: string;
   isExecuting: boolean;
   result?: string;
+  args?: string;
   startIndex: number;
   endIndex: number;
 }
@@ -233,6 +234,7 @@ export function parseToolCallMarkers(message: string, messageId?: string): Parse
         confirmationMessage: confirmationMessage || undefined,
         isExecuting: isExecuting === "true",
         result: safeResult,
+        args: content || undefined,
         startIndex: match.index,
         endIndex: match.index + fullMatch.length,
       },
