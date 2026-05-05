@@ -115,17 +115,8 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
   // This prevents infinite rolling animation if marker update fails or is delayed
   const actuallyExecuting = isExecuting && !result;
 
-  // Always allow expanding completed tool calls
-  const canExpand = !actuallyExecuting;
-
   return (
-    <Collapsible
-      open={canExpand ? isOpen : false}
-      onOpenChange={setIsOpen}
-      disabled={!canExpand}
-      aria-disabled={!canExpand}
-      className="tw-my-3 tw-w-full"
-    >
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="tw-my-3 tw-w-full">
       <div
         className={cn(
           "tw-rounded-md tw-border tw-border-border tw-bg-secondary/50",
@@ -146,13 +137,7 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
           </div>
         )}
 
-        <CollapsibleTrigger
-          className={cn(
-            "tw-flex tw-w-full tw-items-center tw-justify-between tw-px-3 tw-py-2.5 tw-text-sm sm:tw-px-4 sm:tw-py-3",
-            canExpand && "hover:tw-bg-secondary/70",
-            !canExpand && "tw-cursor-default"
-          )}
-        >
+        <CollapsibleTrigger className="tw-flex tw-w-full tw-items-center tw-justify-between tw-px-3 tw-py-2.5 tw-text-sm hover:tw-bg-secondary/70 sm:tw-px-4 sm:tw-py-3">
           <div className="tw-flex tw-items-center tw-gap-2">
             {React.createElement(TOOL_ICONS[toolName] || Wrench, {
               className: "tw-size-4 tw-text-muted",
@@ -204,14 +189,12 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
               </>
             )}
 
-            {(canExpand || actuallyExecuting) && (
-              <ChevronRight
-                className={cn(
-                  "tw-size-4 tw-text-muted tw-transition-transform",
-                  isOpen && "tw-rotate-90"
-                )}
-              />
-            )}
+            <ChevronRight
+              className={cn(
+                "tw-size-4 tw-text-muted tw-transition-transform",
+                isOpen && "tw-rotate-90"
+              )}
+            />
           </div>
         </CollapsibleTrigger>
 
