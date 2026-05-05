@@ -242,8 +242,12 @@ export class ThinkBlockStreamer {
       }
       case "TOOL_CALL_ARGS": {
         const existing = this.aguiToolCalls.get(toolCallId);
-        if (existing && typeof event.args === "string") {
-          existing.args += event.args;
+        if (existing) {
+          // Brain sends args as "delta" field (ToolCallArgsEvent.delta)
+          const argsDelta = (event.delta as string) || (event.args as string) || "";
+          if (argsDelta) {
+            existing.args += argsDelta;
+          }
         }
         break;
       }
