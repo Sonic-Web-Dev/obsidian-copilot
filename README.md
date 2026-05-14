@@ -1,7 +1,7 @@
 <h1 align="center">Copilot for Obsidian</h1>
 
 <h2 align="center">
-The Ultimate AI Assistant for Your Second Brain
+AI Assistant for Your Second Brain
 </h2>
 
 <p align="center">
