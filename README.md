@@ -1,8 +1,12 @@
 <h1 align="center">Copilot for Obsidian</h1>
 
 <h2 align="center">
-AI Assistant for Your Second Brain
+Your notes are scattered across vaults, AI assistants forget context between sessions, and switching providers locks you into proprietary platforms.
 </h2>
+
+<h3 align="center">
+<strong>Copilot for Obsidian brings AI directly into your second brain — chat with your vault, process multimedia content, and run autonomous agents without vendor lock-in.</strong>
+</h3>
 
 <p align="center">
   <img src="https://img.shields.io/github/v/release/logancyang/obsidian-copilot?style=for-the-badge&sort=semver" alt="GitHub release (latest SemVer)">
