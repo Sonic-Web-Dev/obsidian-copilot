@@ -93,7 +93,7 @@ export function getContextHubBaseUrl(): string {
   } catch {
     // Companion plugin not available
   }
-  return "https://dev-api.contexthub.md/v1";
+  return "https://api.contexthub.md/v1";
 }
 
 // ---------------------------------------------------------------------------

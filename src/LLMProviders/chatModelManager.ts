@@ -391,7 +391,7 @@ export default class ChatModelManager {
       // Headers (auth + context) are injected per-request via getHeaders callback
       [ChatModelProviders.CONTEXTHUB]: {
         modelName: modelName,
-        baseUrl: customModel.baseUrl || this.getContextHubBaseUrl(),
+        baseUrl: customModel.baseUrl || (() => this.getContextHubBaseUrl()),
         streaming: customModel.stream ?? true,
         getHeaders: this.createContextHubHeaders(),
       },

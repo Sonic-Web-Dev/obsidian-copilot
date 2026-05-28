@@ -28,7 +28,7 @@ export class ContextHubChainRunner extends BaseChainRunner {
   private getChatModel(): ContextHubChatModel {
     return new ContextHubChatModel({
       modelName: CONTEXTHUB_MODELS.SONNET,
-      baseUrl: getContextHubBaseUrl(),
+      baseUrl: getContextHubBaseUrl,
       streaming: true,
       getHeaders: createContextHubHeaders(),
       endpointPath: "/chat/completions",

@@ -76,7 +76,8 @@ interface ContextHubChatResponse {
 
 export interface ContextHubChatModelParams extends BaseChatModelParams {
   modelName: string;
-  baseUrl: string;
+  /** Static base URL or lazy resolver called per-request (prefers companion plugin endpoint) */
+  baseUrl: string | (() => string);
   streaming?: boolean;
   /** Async function that returns fresh auth + context headers for each request */
   getHeaders: () => Promise<Record<string, string>>;
@@ -97,7 +98,7 @@ export class ContextHubChatModel extends BaseChatModel {
 
   modelName: string;
   streaming: boolean;
-  private baseUrl: string;
+  private _baseUrl: string | (() => string);
   private getHeaders: () => Promise<Record<string, string>>;
   private endpointPath: string;
 
@@ -107,10 +108,14 @@ export class ContextHubChatModel extends BaseChatModel {
   constructor(fields: ContextHubChatModelParams) {
     super(fields);
     this.modelName = fields.modelName;
-    this.baseUrl = fields.baseUrl;
+    this._baseUrl = fields.baseUrl;
     this.streaming = fields.streaming ?? true;
     this.getHeaders = fields.getHeaders;
     this.endpointPath = fields.endpointPath ?? "/chat/completions";
+  }
+
+  private resolveBaseUrl(): string {
+    return typeof this._baseUrl === "function" ? this._baseUrl() : this._baseUrl;
   }
 
   _llmType(): string {
@@ -151,7 +156,7 @@ export class ContextHubChatModel extends BaseChatModel {
   ): Promise<ChatResult> {
     const chatMessages = this.toOpenAIMessages(messages);
     const headers = await this.getHeaders();
-    const url = `${this.baseUrl}${this.endpointPath}`;
+    const url = `${this.resolveBaseUrl()}${this.endpointPath}`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -255,7 +260,7 @@ export class ContextHubChatModel extends BaseChatModel {
 
     const chatMessages = this.toOpenAIMessages(messages);
     const headers = await this.getHeaders();
-    const url = `${this.baseUrl}${this.endpointPath}`;
+    const url = `${this.resolveBaseUrl()}${this.endpointPath}`;
 
     const response = await fetch(url, {
       method: "POST",
